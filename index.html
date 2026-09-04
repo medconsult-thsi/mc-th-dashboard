@@ -718,7 +718,7 @@
         const g = it.group || '(Ungrouped)';
         if (!gpMap[g]) gpMap[g] = { revenue: 0, items: [] };
         gpMap[g].revenue += it.revenue;
-        gpMap[g].items.push({ item: it.item, count: it.count, revenue: it.revenue });
+        gpMap[g].items.push({ item: it.item, count: it.count, qty: it.qty, revenue: it.revenue });
       });
       const ae = Object.entries(aeMap).map(([name,v]) => ({ name, channel: 'AE', revenue: v.revenue, items: v.items })).sort((a,b) => b.revenue - a.revenue);
       const gp = Object.entries(gpMap).map(([name,v]) => ({ name, channel: 'GP', revenue: v.revenue, items: v.items })).sort((a,b) => b.revenue - a.revenue);
@@ -777,7 +777,7 @@
         const itemsSorted = g.items.slice().sort((a,b) => b.revenue - a.revenue);
         const itemRows = itemsSorted.map(it => {
           const itemPct = g.revenue ? (it.revenue / g.revenue * 100).toFixed(1) : '0.0';
-          return `<tr><td>${it.item}</td><td class="right">${it.count}</td><td class="right">${fmtTHB(it.revenue)}</td><td class="right">${itemPct}%</td></tr>`;
+          return `<tr><td>${it.item}</td><td class="right">${it.qty != null ? it.qty : it.count}</td><td class="right">${fmtTHB(it.revenue)}</td><td class="right">${itemPct}%</td></tr>`;
         }).join('') || '<tr><td colspan="4" style="color:#b8c2d0;">No itemized data</td></tr>';
         return `
         <div class="grp-card" id="${cardId}">
@@ -858,7 +858,7 @@
       const catList = Object.entries(catMap).map(([name,revenue]) => ({name, revenue})).sort((a,b) => b.revenue - a.revenue);
       const topItems = [
         ...aeItemsArr.map(it => ({ item: it.item, tag: it.cat, channel: 'AE', qty: it.sessions, revenue: it.revenue })),
-        ...gpItemsArr.map(it => ({ item: it.item, tag: isWeightLossGroup(it.group) ? 'Weight Loss' : it.group, channel: 'GP', qty: it.count, revenue: it.revenue })),
+        ...gpItemsArr.map(it => ({ item: it.item, tag: isWeightLossGroup(it.group) ? 'Weight Loss' : it.group, channel: 'GP', qty: it.qty, revenue: it.revenue })),
       ].sort((a,b) => b.revenue - a.revenue).slice(0, 10);
       return { aeTotal, wlTotal, gpExWlTotal, gpAllTotal, grand, catList, topItems };
     }
