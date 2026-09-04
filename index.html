@@ -1,0 +1,1786 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MC - TH</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+    <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #eef1f6; color: #1a2332; font-size: 15px; }
+    .header { background: linear-gradient(135deg, #0d2240 0%, #1a3a5f 60%, #1e5f3a 100%); color: #fff; padding: 0 32px;
+      display: flex; align-items: center; justify-content: space-between; height: 72px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+    .header-left { display: flex; align-items: center; gap: 16px; }
+    .logo-mark { width: 44px; height: 44px; background: #1a7a4a; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+    .header-title { font-size: 20px; font-weight: 700; }
+    .header-sub { font-size: 12px; color: #a0c8b0; margin-top: 2px; }
+    .header-right { text-align: right; }
+    .header-date { font-size: 13px; color: #a0c8b0; }
+    .period-pill { display: inline-block; margin-top: 4px; background: rgba(26,122,74,0.5); border: 1px solid #1a7a4a;
+      border-radius: 20px; padding: 2px 12px; font-size: 13px; font-weight: 700; color: #7ff0b0; }
+    .page { padding: 22px 28px; }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
+    .kpi-card { background: #fff; border-radius: 12px; padding: 18px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.07); border-top: 4px solid transparent; }
+    .kpi-card.green { border-top-color: #1a7a4a; } .kpi-card.blue { border-top-color: #2e6da4; }
+    .kpi-card.teal { border-top-color: #1a7a7a; } .kpi-card.gold { border-top-color: #c8931a; } .kpi-card.navy { border-top-color: #1e3a5f; }
+    .kpi-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #4f6278; margin-bottom: 6px; }
+    .kpi-value { font-size: 25px; font-weight: 800; line-height: 1.1; }
+    .kpi-card.green .kpi-value { color: #1a5a34; } .kpi-card.blue .kpi-value { color: #1e3a5f; }
+    .kpi-card.teal .kpi-value { color: #1a7a7a; } .kpi-card.gold .kpi-value { color: #9c7315; } .kpi-card.navy .kpi-value { color: #1e3a5f; }
+    .kpi-margin { font-size: 13px; color: #3d4f63; margin-top: 4px; }
+    .insight-bar { background: linear-gradient(135deg, #1a5a34, #2e7a50); color: #fff; border-radius: 10px; padding: 14px 20px;
+      margin-bottom: 18px; display: flex; align-items: center; gap: 12px; font-size: 14px; }
+    .grid-2 { display: grid; grid-template-columns: 3fr 2fr; gap: 16px; margin-bottom: 18px; }
+    .grid-half { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px; }
+    .grid-third { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 18px; }
+    .chart-card { background: #fff; border-radius: 12px; padding: 20px 22px; box-shadow: 0 2px 10px rgba(0,0,0,0.07); }
+    .chart-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+    .chart-title { font-size: 15px; font-weight: 700; color: #1a2332; }
+    .chart-sub { font-size: 12px; color: #5c6b80; margin-top: 3px; }
+    .chart-badge { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 20px; background: #edf2f9; color: #1d4b73; white-space: nowrap; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .data-table th { background: #f0f3f8; text-align: left; padding: 9px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; color: #3d4f63; border-bottom: 2px solid #dde4ef; }
+    .data-table th.right, .data-table td.right { text-align: right; }
+    .data-table td { padding: 9px 12px; border-bottom: 1px solid #eef1f6; vertical-align: middle; }
+    .data-table tr:hover td { background: #f8fafd; }
+    .donut-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; }
+    .donut-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #263544; font-weight: 600; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .footer { background: #111e30; color: #5a7a9a; text-align: center; padding: 13px 32px; font-size: 12px; border-top: 1px solid #0a1520; }
+    .footer span { color: #c8d8e8; font-weight: 600; }
+    .cal-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+    .cal-dow { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #5c6b80; text-align: center; padding-bottom: 4px; }
+    .cal-cell { aspect-ratio: 1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; cursor: default; background: #f4f6fa; color: #8492a3; position: relative; }
+    .cal-cell.has-data { cursor: pointer; color: #fff; transition: transform 0.1s; }
+    .cal-cell.has-data:hover { transform: scale(1.06); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    .cal-cell.selected { outline: 3px solid #1a2332; outline-offset: 1px; }
+    .cal-cell .cal-day-num { font-size: 14px; }
+    .cal-cell .cal-amt { font-size: 9px; font-weight: 600; margin-top: 2px; opacity: 0.9; }
+    .cal-empty { background: transparent; }
+    .cal-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .cal-nav-btn { background: #edf2f9; border: none; border-radius: 8px; width: 30px; height: 30px; font-size: 15px; font-weight: 700;
+      color: #1e3a5f; cursor: pointer; }
+    .cal-nav-btn:hover { background: #dde7f5; }
+    .cal-select { border: 1px solid #dde4ef; border-radius: 8px; padding: 6px 10px; font-size: 14px; font-weight: 600; font-family: inherit; color: #1a2332; }
+    .day-detail { background: #f8fafd; border-radius: 10px; padding: 16px; min-height: 220px; }
+    .day-detail-placeholder { color: #5c6b80; font-size: 14px; text-align: center; padding-top: 60px; }
+    .day-detail-title { font-size: 16px; font-weight: 800; color: #1a2332; margin-bottom: 10px; }
+    .day-kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+    .day-kpi { background: #fff; border-radius: 8px; padding: 8px 10px; }
+    .day-kpi-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #5c6b80; }
+    .day-kpi-value { font-size: 16px; font-weight: 800; color: #1a2332; }
+    .day-mini-table { font-size: 12px; width: 100%; }
+    .day-mini-table td { padding: 3px 4px; }
+    .report-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .preset-btn { background: #edf2f9; color: #1e3a5f; border: none; border-radius: 20px; padding: 7px 16px;
+      font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
+    .preset-btn:hover { background: #dde7f5; }
+    .preset-btn.active { background: #1e3a5f; color: #fff; }
+    .date-input { border: 1px solid #dde4ef; border-radius: 8px; padding: 6px 10px; font-size: 13px; font-family: inherit; }
+    .report-btn { background: linear-gradient(135deg, #1a7a4a, #1a5a34); color: #fff; border: none; border-radius: 20px;
+      padding: 8px 22px; font-size: 14px; font-weight: 700; cursor: pointer; margin-left: auto; }
+    .report-btn:hover { opacity: 0.92; }
+    .report-output { display: none; }
+    .report-output.visible { display: block; }
+    .report-placeholder { color: #5c6b80; font-size: 14px; text-align: center; padding: 30px 0; }
+    .now-showing { display: inline-block; background: #1e3a5f; color: #fff; font-size: 12px; font-weight: 700;
+      padding: 4px 12px; border-radius: 20px; margin-bottom: 12px; }
+    .empty-note { color: #5c6b80; font-size: 14px; text-align: center; padding: 20px 0; }
+    .page-nav { background: #111e30; padding: 10px 28px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #0a1520; }
+    .page-nav label { color: #7a93ad; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .page-select { background: #1a2c44; color: #fff; border: 1px solid #2a3f5c; border-radius: 8px; padding: 7px 14px;
+      font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer; }
+    .page-select:hover { background: #22354f; }
+    .page-view { display: none; }
+    .page-view.active { display: block; }
+    .grp-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .grp-toggle { display: flex; background: #edf2f9; border-radius: 20px; padding: 3px; gap: 3px; }
+    .grp-toggle button { border: none; background: transparent; color: #4f6278; font-size: 12px; font-weight: 700;
+      padding: 6px 16px; border-radius: 20px; cursor: pointer; }
+    .grp-toggle button.active { background: #1e3a5f; color: #fff; }
+    .grp-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.07); margin-bottom: 10px; overflow: hidden; }
+    .grp-card-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; cursor: pointer; }
+    .grp-card-header:hover { background: #f8fafd; }
+    .grp-card-left { display: flex; align-items: center; gap: 10px; }
+    .grp-chevron { font-size: 11px; color: #8492a3; transition: transform 0.15s; display: inline-block; }
+    .grp-card.expanded .grp-chevron { transform: rotate(90deg); }
+    .grp-channel-badge { font-size: 10px; font-weight: 800; padding: 2px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.4px; }
+    .grp-channel-badge.ae { background: #e3f4f4; color: #1a7a7a; }
+    .grp-channel-badge.gp { background: #e5f3ea; color: #1a7a4a; }
+    .grp-name { font-size: 14px; font-weight: 700; color: #1a2332; }
+    .grp-card-right { display: flex; align-items: center; gap: 18px; }
+    .grp-revenue { font-size: 15px; font-weight: 800; color: #1a2332; }
+    .grp-pct { font-size: 12px; color: #5c6b80; min-width: 48px; text-align: right; }
+    .grp-bar-wrap { background: #edf1f7; border-radius: 20px; height: 6px; width: 100px; overflow: hidden; }
+    .grp-bar-fill { height: 100%; border-radius: 20px; }
+    .grp-items { display: none; padding: 0 18px 16px; border-top: 1px solid #eef1f6; }
+    .grp-card.expanded .grp-items { display: block; }
+    .kpi-row-flex { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 18px; }
+    .kpi-card.pending { border-top-color: #b8c2d0; background: repeating-linear-gradient(135deg, #fff, #fff 10px, #fafbfd 10px, #fafbfd 20px); }
+    .kpi-card.pending .kpi-value { color: #9aa7b8; }
+    .kpi-card.pending .kpi-margin { color: #aab5c4; }
+    .kpi-card.red { border-top-color: #b8341a; }
+    .kpi-card.red .kpi-value { color: #9c2a15; }
+    .kpi-pending-badge { display: inline-block; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;
+      background: #edf1f7; color: #7a8aa0; padding: 2px 7px; border-radius: 10px; margin-left: 6px; vertical-align: middle; }
+    .grp-3col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; align-items: start; }
+    .grp-col { background: #fff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.07); overflow: hidden; display: flex; flex-direction: column; max-height: 640px; }
+    .grp-col-header { padding: 12px 14px; font-size: 13px; font-weight: 800; color: #1a2332; border-bottom: 1px solid #eef1f6; background: #f8fafd; flex-shrink: 0; }
+    .grp-col-body { overflow-y: auto; padding: 6px; }
+    .grp-col-body .grp-card { margin-bottom: 6px; }
+    .grp-col-body .grp-card-header { padding: 9px 10px; flex-wrap: wrap; gap: 6px; }
+    .grp-col-body .grp-card-left { gap: 6px; }
+    .grp-col-body .grp-name { font-size: 12px; }
+    .grp-col-body .grp-card-right { gap: 8px; }
+    .grp-col-body .grp-revenue { font-size: 12px; }
+    .grp-col-body .grp-pct { font-size: 10px; min-width: 34px; }
+    .grp-col-body .grp-bar-wrap { width: 40px; }
+    .grp-col-body .grp-items { padding: 0 10px 10px; }
+    .grp-col-body .data-table { font-size: 11px; }
+    .grp-col-body .data-table th, .grp-col-body .data-table td { padding: 5px 6px; }
+    .kpi-card-wide { grid-column: span 2; }
+    .kpi-source-list { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #dde4ef; display: flex; flex-wrap: wrap; gap: 6px 16px; }
+    .kpi-source-item { font-size: 12px; color: #3d4f63; display: flex; align-items: center; gap: 5px; }
+    .kpi-source-item b { color: #1a2332; font-weight: 800; }
+    .kpi-source-dot { width: 7px; height: 7px; border-radius: 50%; background: #2e6da4; flex-shrink: 0; }
+    .grp-toggle.primary { background: #fff; padding: 5px; border: 1px solid #dde4ef; box-shadow: 0 2px 10px rgba(0,0,0,0.08); border-radius: 24px; display: inline-flex; }
+    .grp-toggle.primary button { font-size: 14px; font-weight: 800; padding: 10px 24px; border-radius: 20px; color: #1e3a5f; }
+    .grp-toggle.primary button:not(.active):hover { background: #edf2f9; }
+    .grp-toggle.primary button.active { background: linear-gradient(135deg, #1a7a4a, #1a5a34); color: #fff; box-shadow: 0 2px 10px rgba(26,122,74,0.4); }
+    .branch-toggle { display: inline-flex; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.28);
+      border-radius: 20px; padding: 3px; gap: 3px; margin-bottom: 6px; }
+    .branch-toggle button { border: none; background: transparent; color: #cdd8e6; font-size: 12px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 0.4px; padding: 6px 16px; border-radius: 20px; cursor: pointer; }
+    .branch-toggle button:not(.active):hover { background: rgba(255,255,255,0.1); }
+    .branch-toggle button.active { background: #1a7a4a; color: #fff; }
+    /* ---------- top menu bar (replaces the old page-select dropdown) ---------- */
+    .top-menu { display: inline-flex; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 24px; padding: 4px; gap: 3px; }
+    .top-menu button { border: none; background: transparent; color: #a8b8cc; font-size: 13px; font-weight: 800;
+      padding: 9px 22px; border-radius: 20px; cursor: pointer; letter-spacing: 0.2px; transition: background 0.15s, color 0.15s; }
+    .top-menu button:not(.active):hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .top-menu button.active { background: linear-gradient(135deg, #1a7a4a, #1a5a34); color: #fff; box-shadow: 0 2px 10px rgba(26,122,74,0.4); }
+    /* ---------- Weight Loss page theme (matches the standalone PPTX report palette) ---------- */
+    .kpi-card.wl-total { border-top-color: #1B2A4A; } .kpi-card.wl-total .kpi-value { color: #1B2A4A; }
+    .kpi-card.wl-mjr { border-top-color: #2E5AAC; } .kpi-card.wl-mjr .kpi-value { color: #2E5AAC; }
+    .kpi-card.wl-wgv { border-top-color: #E07B39; } .kpi-card.wl-wgv .kpi-value { color: #b8611f; }
+    .kpi-card.wl-ozm { border-top-color: #3FA796; } .kpi-card.wl-ozm .kpi-value { color: #2c7d6f; }
+    .kpi-card.wl-ryb { border-top-color: #8E5572; } .kpi-card.wl-ryb .kpi-value { color: #8E5572; }
+    .kpi-trend { font-size: 12px; font-weight: 800; margin-top: 4px; }
+    .kpi-trend.up { color: #1B7A3D; } .kpi-trend.down { color: #B8382B; } .kpi-trend.flat { color: #8492a3; }
+    .wl-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 2px 0 14px; }
+    .wl-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: #3d4f63; }
+    .wl-legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+    .wl-table td.wl-fam-mjr, .wl-table td.wl-fam-wgv, .wl-table td.wl-fam-ozm, .wl-table td.wl-fam-ryb { font-weight: 800; }
+    .wl-table td.wl-fam-mjr { color: #2E5AAC; } .wl-table td.wl-fam-wgv { color: #b8611f; }
+    .wl-table td.wl-fam-ozm { color: #2c7d6f; } .wl-table td.wl-fam-ryb { color: #8E5572; }
+    .wl-var-cell { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 800; color: #fff; }
+    .wl-badge-up { color: #1B7A3D; font-weight: 800; } .wl-badge-down { color: #B8382B; font-weight: 800; } .wl-badge-flat { color: #8492a3; font-weight: 700; }
+    </style>
+    </head>
+    <body>
+    <div class="header">
+      <div class="header-left">
+        <div class="logo-mark">M</div>
+        <div>
+          <div class="header-title" id="headerTitle">MC - TH</div>
+          <div class="header-sub">Financial Trend Dashboard</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="branch-toggle" id="branchToggle"><button data-branch="thonglor" class="active">Thonglor</button><button data-branch="silom" class="">Silom</button></div>
+        <div class="header-date">Currency: THB &nbsp;|&nbsp; Confidential</div>
+        <div class="period-pill" id="periodPill">Loading…</div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <div class="top-menu" id="topMenu">
+        <button class="active" data-page="main">Main Dashboard</button>
+        <button data-page="byGroup">Revenue by Group</button>
+        <button data-page="weightLoss">Weight Loss</button>
+      </div>
+    </div>
+    <div class="page-view active" id="pageMain">
+    <div class="page">
+      <div class="kpi-row">
+        <div class="kpi-card blue"><div class="kpi-label">Grand Total Revenue</div><div class="kpi-value" id="kpiGrandTotal">-</div><div class="kpi-margin" id="kpiGrandDays">-</div></div>
+        <div class="kpi-card teal"><div class="kpi-label">AE — Aesthetic</div><div class="kpi-value" id="kpiAE">-</div><div class="kpi-margin" id="kpiAEPct">-</div></div>
+        <div class="kpi-card green"><div class="kpi-label">GP — General Practice</div><div class="kpi-value" id="kpiGP">-</div><div class="kpi-margin" id="kpiGPPct">-</div></div>
+        <div class="kpi-card gold"><div class="kpi-label">Unique Patients</div><div class="kpi-value" id="kpiPatients">-</div><div class="kpi-margin" id="kpiAvgRev">-</div></div>
+      </div>
+      <div class="insight-bar"><div style="font-size:18px;">&#9654;</div><div id="insightText">Loading…</div></div>
+
+      <div class="grid-half">
+        <div class="chart-card">
+          <div class="chart-header"><div><div class="chart-title">Daily Revenue Trend</div>
+          </div><div class="chart-badge" id="chartBadgeDays">-</div></div>
+          <div style="height:260px;"><canvas id="chartDailyLine"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><div><div class="chart-title">30-Day Moving Average</div>
+          </div><div class="chart-badge" id="chartBadgeMA">-</div></div>
+          <div style="height:260px;"><canvas id="chartMovingAvg"></canvas></div>
+        </div>
+      </div>
+
+      <div class="chart-card" style="margin-bottom:18px;">
+        <div class="chart-header"><div><div class="chart-title">Calendar</div>
+        <div class="chart-sub">Choose any month/year, then click a day to filter the charts below. Darker = higher revenue. Grey = no data.</div></div></div>
+        <div class="cal-nav">
+          <button class="cal-nav-btn" id="calPrev">&#9664;</button>
+          <select class="cal-select" id="monthSelect"></select>
+          <select class="cal-select" id="yearSelect"></select>
+          <button class="cal-nav-btn" id="calNext">&#9654;</button>
+        </div>
+        <div class="cal-wrap">
+          <div>
+            <div class="cal-grid" id="calDow"></div>
+            <div class="cal-grid" id="calGrid" style="margin-top:6px;"></div>
+          </div>
+          <div class="day-detail" id="dayDetail"><div class="day-detail-placeholder">Click a day on the calendar to see its detail</div></div>
+        </div>
+      </div>
+
+      <div id="nowShowingLabel" class="now-showing">Showing: whole period</div>
+
+      <div class="grid-third">
+        <div class="chart-card">
+          <div class="chart-header"><div><div class="chart-title">Revenue by Channel</div><div class="chart-sub">Updates with calendar / duration selection</div></div></div>
+          <div style="height:170px;"><canvas id="chartChannelPie"></canvas></div>
+          <div class="donut-legend" id="channelLegend"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><div><div class="chart-title">Aesthetic (AE) Mix by Category</div><div class="chart-sub" id="aeCatSub">Updates with calendar / duration selection</div></div></div>
+          <div style="height:170px;"><canvas id="chartAECat"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><div><div class="chart-title">Day-of-Week Comparison</div>
+          <div class="chart-sub" id="dowSub">Average total revenue by weekday</div></div></div>
+          <div style="height:170px;"><canvas id="chartDow"></canvas></div>
+        </div>
+      </div>
+
+      <div class="chart-card" style="margin-bottom:18px;">
+        <div class="chart-header"><div><div class="chart-title">Custom Duration Report</div>
+        <div class="chart-sub">Pick a range — the charts above update immediately. Click "Generate Report" for the detailed table below.</div></div></div>
+        <div class="report-controls">
+          <button class="preset-btn" data-days="2">Last 2 Days</button>
+          <button class="preset-btn" data-days="3">Last 3 Days</button>
+          <button class="preset-btn" data-days="7">Last 7 Days</button>
+          <button class="preset-btn" data-days="all">All Data</button>
+          <input type="date" class="date-input" id="rangeStart">
+          <span style="font-size:12px;color:#8a9bb0;">to</span>
+          <input type="date" class="date-input" id="rangeEnd">
+          <button class="report-btn" id="generateReportBtn">Generate Report</button>
+        </div>
+        <div class="report-placeholder" id="reportPlaceholder">Choose a duration above and click "Generate Report" to see the detailed table.</div>
+        <div class="report-output" id="reportOutput"></div>
+      </div>
+
+      <div class="grid-half">
+        <div class="chart-card">
+          <div class="chart-header"><div><div class="chart-title">Top 10 AE Items</div><div class="chart-sub">By revenue, selected month (whole period)</div></div></div>
+          <table class="data-table"><thead><tr><th>#</th><th>Item</th><th>Category</th><th class="right">Sessions</th><th class="right">Revenue (THB)</th><th class="right">% of AE</th></tr></thead><tbody id="topAEBody"></tbody></table>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><div><div class="chart-title">Top 10 GP Items</div><div class="chart-sub">By revenue, selected month (whole period)</div></div></div>
+          <table class="data-table"><thead><tr><th>#</th><th>Item</th><th>Group</th><th class="right">Count</th><th class="right">Revenue (THB)</th><th class="right">% of GP</th></tr></thead><tbody id="topGPBody"></tbody></table>
+        </div>
+      </div>
+    </div>
+    </div>
+    <div class="page-view" id="pageGroup">
+    <div class="page">
+      <div class="grp-controls">
+        <div class="grp-toggle" id="grpGranToggle">
+          <button class="active" data-gran="daily">Daily</button>
+          <button data-gran="monthly">Monthly</button>
+        </div>
+        <select class="cal-select" id="grpMonthSelect" style="margin-left:auto;"></select>
+        <select class="cal-select" id="grpYearSelect"></select>
+      </div>
+      <div class="chart-card" id="grpCalendarCard" style="margin-bottom:16px; max-width:420px;">
+        <div class="chart-header"><div><div class="chart-title">Pick a Day</div>
+        <div class="chart-sub">Darker = higher revenue. Grey = no data. Switch to Monthly above for the whole-month view instead.</div></div></div>
+        <div class="cal-grid" id="grpCalDow"></div>
+        <div class="cal-grid" id="grpCalGrid" style="margin-top:6px;"></div>
+      </div>
+
+      <div class="grp-toggle primary" id="grpViewToggle" style="margin-bottom:20px;">
+        <button class="active" data-view="breakdown">Group Breakdown</button>
+        <button data-view="summary">Executive Summary</button>
+      </div>
+
+      <div id="grpBreakdownView">
+        <div class="chart-card" style="margin-bottom:14px;">
+          <div class="chart-header"><div><div class="chart-title" id="grpTitle">Revenue by Group</div>
+          <div class="chart-sub" id="grpSub">Click any group to break it down into individual items, same detail level as the income summary files.</div></div></div>
+        </div>
+        <div class="grp-3col">
+          <div class="grp-col">
+            <div class="grp-col-header">All</div>
+            <div class="grp-col-body" id="grpCardListAll"></div>
+          </div>
+          <div class="grp-col">
+            <div class="grp-col-header">AE — Aesthetic</div>
+            <div class="grp-col-body" id="grpCardListAE"></div>
+          </div>
+          <div class="grp-col">
+            <div class="grp-col-header">GP — General Practice</div>
+            <div class="grp-col-body" id="grpCardListGP"></div>
+          </div>
+        </div>
+        <div class="empty-note" id="grpEmptyNote" style="display:none;">No data for this period.</div>
+      </div>
+
+      <div id="grpSummaryView" style="display:none;">
+        <div id="sumKpiWrap"></div>
+
+        <div class="grid-2" style="margin-bottom:16px;">
+          <div class="chart-card">
+            <div class="chart-header"><div><div class="chart-title" id="sumChartTitle">Income by Category</div>
+            <div class="chart-sub" id="sumChartSub">-</div></div></div>
+            <div style="height:300px;"><canvas id="sumCategoryChart"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-header"><div><div class="chart-title">Weight Loss vs Aesthetic vs GP</div>
+            <div class="chart-sub" id="sumMixChartSub">-</div></div></div>
+            <div style="height:300px;"><canvas id="sumMixChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header"><div><div class="chart-title">Top Items</div>
+          <div class="chart-sub" id="sumTopSub">-</div></div></div>
+          <table class="data-table"><thead><tr><th>#</th><th>Item</th><th>Channel / Group</th><th class="right">Qty / Sessions</th><th class="right">Revenue (THB)</th></tr></thead><tbody id="sumTopBody"></tbody></table>
+        </div>
+
+        <div class="chart-card" style="margin-top:16px;">
+          <div class="chart-header"><div><div class="chart-title">Overdue Balance by Day</div>
+          <div class="chart-sub" id="overdueChartSub">Outstanding balance per day, from payment_overdue files</div></div></div>
+          <div style="height:220px;"><canvas id="chartOverdue"></canvas></div>
+        </div>
+      </div>
+    </div>
+    </div>
+    <div class="page-view" id="pageWeightLoss">
+    <div class="page">
+      <div class="kpi-row" id="wlKpiRow" style="grid-template-columns: repeat(5, 1fr);"></div>
+      <div class="empty-note" id="wlEmptyNote" style="display:none;">No weight loss pen data for this period.</div>
+      <div id="wlLatestLabel" class="now-showing">Showing: latest month</div>
+
+      <div id="wlContent">
+        <div class="grid-third" style="margin-bottom:16px;">
+          <div class="chart-card">
+            <div class="chart-header"><div><div class="chart-title">Mounjaro — Pen Usage by Item</div>
+            <div class="chart-sub">2.5mg – 15mg dose variants</div></div></div>
+            <div style="height:260px;"><canvas id="wlChartMounjaro"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-header"><div><div class="chart-title">Wegovy — Pen Usage by Item</div>
+            <div class="chart-sub">0.25mg – 2.4mg dose variants</div></div></div>
+            <div style="height:260px;"><canvas id="wlChartWegovy"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-header"><div><div class="chart-title">Ozempic — Pen Usage by Item</div>
+            <div class="chart-sub">1mg pre-filled pen</div></div></div>
+            <div style="height:260px;"><canvas id="wlChartOzempic"></canvas></div>
+          </div>
+        </div>
+        <div class="grid-half" style="margin-bottom:18px;">
+          <div class="chart-card">
+            <div class="chart-header"><div><div class="chart-title">Rybelsus — Pen Usage by Item</div>
+            <div class="chart-sub">3mg / 7mg / 14mg dose variants</div></div></div>
+            <div style="height:260px;"><canvas id="wlChartRybelsus"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-header"><div><div class="chart-title">Pen Usage by Group</div>
+            <div class="chart-sub">Mounjaro, Wegovy, Ozempic, Rybelsus — total pens, latest month</div></div></div>
+            <div style="height:260px;"><canvas id="wlGroupChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="chart-card" style="margin-bottom:18px;">
+          <div class="chart-header"><div><div class="chart-title">Month / Quarter Comparison</div>
+          <div class="chart-sub" id="wlCompareSub">Compare the latest month against any other month, or compare quarters.</div></div>
+          <div class="grp-toggle" id="wlCompareModeToggle">
+            <button class="active" data-mode="monthly">Monthly</button>
+            <button data-mode="quarterly">Quarterly</button>
+          </div></div>
+          <div class="grp-controls" id="wlCompareMonthlyControls">
+            <label for="wlCompareMonthSelect" style="font-size:12px;font-weight:700;color:#5c6b80;">Compare with:</label>
+            <select class="cal-select" id="wlCompareMonthSelect"></select>
+          </div>
+          <div class="grp-controls" id="wlCompareQuarterlyControls" style="display:none;">
+            <label for="wlCompareQuarterSelect" style="font-size:12px;font-weight:700;color:#5c6b80;">Compare with:</label>
+            <select class="cal-select" id="wlCompareQuarterSelect"></select>
+          </div>
+          <div style="height:320px;"><canvas id="wlCompareChart"></canvas></div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header"><div><div class="chart-title">Calendar</div>
+          <div class="chart-sub">Total pens dispensed per day. Darker = higher volume. Click a day for its item breakdown.</div></div></div>
+          <div class="cal-nav">
+            <button class="cal-nav-btn" id="wlCalPrev">&#9664;</button>
+            <select class="cal-select" id="wlCalMonthSelect"></select>
+            <select class="cal-select" id="wlCalYearSelect"></select>
+            <button class="cal-nav-btn" id="wlCalNext">&#9654;</button>
+          </div>
+          <div class="cal-wrap">
+            <div>
+              <div class="cal-grid" id="wlCalDow"></div>
+              <div class="cal-grid" id="wlCalGrid" style="margin-top:6px;"></div>
+            </div>
+            <div class="day-detail" id="wlDayDetail"><div class="day-detail-placeholder">Click a day on the calendar to see its pen breakdown</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+    <div class="footer"><span id="footerLabel">MC - TH</span> — Financial Trend Dashboard</div>
+    <script>
+    const BRANCH_DATA = (function(){
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', 'data.json', false);
+      xhr.send(null);
+      return JSON.parse(xhr.responseText);
+    })();
+    const BRANCH_ORDER = ["thonglor", "silom"];
+    const DEFAULT_BRANCH = "thonglor";
+    const YEAR_MIN = 2024;
+    const YEAR_MAX = 2028;
+    const MONTH_NAMES_JS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const DOW = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+    /* ---------- predicted daily expense reference line ----------
+       Starting estimate only, per branch — THB 400,000/day for Thonglor,
+       THB 60,000/day for Silom (smaller location, smaller run-rate).
+       EXPENSE_PER_DAY_BY_MONTH keys are "branch:YYYY-M" so a specific month
+       can get its own figure later; anything without an explicit entry
+       falls back to that branch's default. */
+    const DEFAULT_EXPENSE_PER_DAY_BY_BRANCH = { thonglor: 400000, silom: 60000 };
+    const EXPENSE_PER_DAY_BY_MONTH = { 'thonglor:2026-7': 400000, 'silom:2026-7': 40000 };
+    function expensePerDayFor(branch, year, monthNum) {
+      const key = `${branch}:${year}-${monthNum}`;
+      if (EXPENSE_PER_DAY_BY_MONTH.hasOwnProperty(key)) return EXPENSE_PER_DAY_BY_MONTH[key];
+      return DEFAULT_EXPENSE_PER_DAY_BY_BRANCH.hasOwnProperty(branch) ? DEFAULT_EXPENSE_PER_DAY_BY_BRANCH[branch] : 400000;
+    }
+
+    if (window.ChartDataLabels) { Chart.register(ChartDataLabels); }
+
+    /* ---------- active-branch state ----------
+       Everything below used to be a one-time const computed from a single
+       embedded dataset. Now there are two datasets (Thonglor / Silom)
+       embedded in BRANCH_DATA, and switchBranch() reassigns all of these
+       and does a full re-render whenever the toggle at the top is clicked. */
+    let currentBranch = DEFAULT_BRANCH;
+    let allMonths = {}, OVERDUE_BY_DATE = {}, OVERDUE_BY_MONTH = {};
+    let DEFAULT_YEAR, DEFAULT_MONTH;
+    let firstSeenMap = {}, earliestLoadedDate = null;
+
+    function loadBranchGlobals(key) {
+      const b = BRANCH_DATA[key];
+      allMonths = b.months;
+      OVERDUE_BY_DATE = b.overdue_by_date;
+      OVERDUE_BY_MONTH = b.overdue_by_month;
+      const keys = b.available_keys;
+      if (keys.length) {
+        const last = allMonths[keys[keys.length - 1]];
+        DEFAULT_YEAR = last.year;
+        DEFAULT_MONTH = last.month_num;
+      } else {
+        const now = new Date();
+        DEFAULT_YEAR = now.getFullYear();
+        DEFAULT_MONTH = now.getMonth() + 1;
+      }
+      firstSeenMap = buildFirstSeenMap();
+      earliestLoadedDate = (() => {
+        let min = null;
+        Object.keys(allMonths).forEach(k => allMonths[k].daily_series.forEach(d => { if (!min || d.date < min) min = d.date; }));
+        return min;
+      })();
+    }
+    loadBranchGlobals(currentBranch);
+
+    let data = null;         // active month's dataset (or null if no data)
+    let dailyByDate = {};
+    let curYear = DEFAULT_YEAR, curMonthNum = DEFAULT_MONTH;
+    let dailyLineChart=null, channelPieChart=null, aeCatChart=null, dowChart=null, movingAvgChart=null;
+
+    function fmtTHB(n) { return Math.round(n).toLocaleString(); }
+
+    /* ---------- unambiguous date formatting (avoid MM/DD vs DD/MM confusion) ---------- */
+    const MONTH_ABBR_JS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    function fmtDateShort(dateStr) { // "1 Jul" — for chart axis labels
+      const [y,m,d] = dateStr.split('-').map(Number);
+      return `${d} ${MONTH_ABBR_JS[m-1]}`;
+    }
+    function fmtDateMed(dateStr) { // "1 Jul 2026" — for table rows
+      const [y,m,d] = dateStr.split('-').map(Number);
+      return `${d} ${MONTH_ABBR_JS[m-1]} ${y}`;
+    }
+    function fmtDateLong(dateStr) { // "1 July 2026" — for headline text
+      const [y,m,d] = dateStr.split('-').map(Number);
+      return `${d} ${MONTH_NAMES_JS[m-1]} ${y}`;
+    }
+
+    /* ---------- dropdowns ---------- */
+    const monthSelect = document.getElementById('monthSelect');
+    monthSelect.innerHTML = MONTH_NAMES_JS.map((m,i) => `<option value="${i+1}">${m}</option>`).join('');
+    const yearSelect = document.getElementById('yearSelect');
+    {
+      let opts = '';
+      for (let y = YEAR_MIN; y <= YEAR_MAX; y++) opts += `<option value="${y}">${y}</option>`;
+      yearSelect.innerHTML = opts;
+    }
+
+    monthSelect.addEventListener('change', () => renderMonth(parseInt(yearSelect.value,10), parseInt(monthSelect.value,10)));
+    yearSelect.addEventListener('change', () => renderMonth(parseInt(yearSelect.value,10), parseInt(monthSelect.value,10)));
+    document.getElementById('calPrev').addEventListener('click', () => {
+      let y = curYear, m = curMonthNum - 1;
+      if (m < 1) { m = 12; y -= 1; }
+      renderMonth(y, m);
+    });
+    document.getElementById('calNext').addEventListener('click', () => {
+      let y = curYear, m = curMonthNum + 1;
+      if (m > 12) { m = 1; y += 1; }
+      renderMonth(y, m);
+    });
+
+    /* ---------- page nav (Main Dashboard / Revenue by Group / Weight Loss) ---------- */
+    const topMenuEl = document.getElementById('topMenu');
+    const pageMainEl = document.getElementById('pageMain');
+    const pageGroupEl = document.getElementById('pageGroup');
+    const pageWeightLossEl = document.getElementById('pageWeightLoss');
+    topMenuEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-page]');
+      if (!btn) return;
+      const view = btn.dataset.page;
+      document.querySelectorAll('#topMenu button').forEach(b => b.classList.toggle('active', b === btn));
+      pageMainEl.classList.toggle('active', view === 'main');
+      pageGroupEl.classList.toggle('active', view === 'byGroup');
+      pageWeightLossEl.classList.toggle('active', view === 'weightLoss');
+      if (view === 'byGroup') refreshGrpActiveView();
+      if (view === 'weightLoss') refreshWlActiveView();
+    });
+
+    /* ---------- branch switcher (Thonglor / Silom) ----------
+       Reassigns every branch-scoped global via loadBranchGlobals(), then does
+       a full re-render of whichever page is currently showing. Both selects
+       on page 2 (grpMonthSelect/grpYearSelect) and the calendar dropdowns on
+       page 1 (monthSelect/yearSelect) are declared further down this script
+       as consts, but that's fine — this function isn't invoked until a click
+       happens, long after the whole script (and those consts) has run. */
+    function updateBranchChrome() {
+      const label = BRANCH_DATA[currentBranch].label;
+      const titleText = currentBranch === 'thonglor' ? 'MC - TH' : `MC - ${label.slice(0,2).toUpperCase()}`;
+      document.getElementById('headerTitle').textContent = titleText;
+      document.getElementById('footerLabel').textContent = titleText;
+      document.title = titleText;
+      document.querySelectorAll('#branchToggle button').forEach(b => b.classList.toggle('active', b.dataset.branch === currentBranch));
+    }
+    function switchBranch(key) {
+      if (key === currentBranch || !BRANCH_DATA[key]) return;
+      currentBranch = key;
+      loadBranchGlobals(key);
+      updateBranchChrome();
+
+      curYear = DEFAULT_YEAR; curMonthNum = DEFAULT_MONTH;
+      renderMonth(curYear, curMonthNum);
+
+      grpYear = DEFAULT_YEAR; grpMonthNum = DEFAULT_MONTH;
+      grpMonthSelect.value = String(grpMonthNum);
+      grpYearSelect.value = String(grpYear);
+      resetGrpSelectedDateToLatest();
+      refreshGrpActiveView();
+
+      wlCalYear = null; wlCalMonthNum = DEFAULT_MONTH;
+      wlSelectedDate = null;
+      refreshWlActiveView();
+    }
+    document.getElementById('branchToggle').addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-branch]');
+      if (!btn) return;
+      switchBranch(btn.dataset.branch);
+    });
+    updateBranchChrome();
+
+    /* ---------- sub-nav within Revenue by Group: Group Breakdown vs Executive Summary ---------- */
+    let grpSubView = 'breakdown';
+    const grpBreakdownViewEl = document.getElementById('grpBreakdownView');
+    const grpSummaryViewEl = document.getElementById('grpSummaryView');
+    document.getElementById('grpViewToggle').addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-view]');
+      if (!btn) return;
+      document.querySelectorAll('#grpViewToggle button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      grpSubView = btn.dataset.view;
+      grpBreakdownViewEl.style.display = grpSubView === 'breakdown' ? 'block' : 'none';
+      grpSummaryViewEl.style.display = grpSubView === 'summary' ? 'block' : 'none';
+      refreshGrpActiveView();
+    });
+
+    /* ---------- Revenue by Group page ---------- */
+    const grpMonthSelect = document.getElementById('grpMonthSelect');
+    grpMonthSelect.innerHTML = MONTH_NAMES_JS.map((m,i) => `<option value="${i+1}">${m}</option>`).join('');
+    const grpYearSelect = document.getElementById('grpYearSelect');
+    {
+      let opts = '';
+      for (let y = YEAR_MIN; y <= YEAR_MAX; y++) opts += `<option value="${y}">${y}</option>`;
+      grpYearSelect.innerHTML = opts;
+    }
+    let grpYear = DEFAULT_YEAR, grpMonthNum = DEFAULT_MONTH, grpSelectedDate = null, sumGranularity = 'daily';
+    grpMonthSelect.value = String(grpMonthNum);
+    grpYearSelect.value = String(grpYear);
+
+    function refreshGrpActiveView() {
+      renderGrpCalendar();
+      if (grpSubView === 'breakdown') { renderGroupPage(); }
+      else { renderSummary(); }
+    }
+    function resetGrpSelectedDateToLatest() {
+      const monthData = allMonths[`${grpYear}-${grpMonthNum}`];
+      grpSelectedDate = (monthData && monthData.daily_series.length)
+        ? monthData.daily_series[monthData.daily_series.length - 1].date : null;
+    }
+    grpMonthSelect.addEventListener('change', () => {
+      grpMonthNum = parseInt(grpMonthSelect.value, 10);
+      resetGrpSelectedDateToLatest();
+      refreshGrpActiveView();
+    });
+    grpYearSelect.addEventListener('change', () => {
+      grpYear = parseInt(grpYearSelect.value, 10);
+      resetGrpSelectedDateToLatest();
+      refreshGrpActiveView();
+    });
+    document.getElementById('grpGranToggle').addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-gran]');
+      if (!btn) return;
+      document.querySelectorAll('#grpGranToggle button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      sumGranularity = btn.dataset.gran;
+      refreshGrpActiveView();
+    });
+
+    /* ---------- shared selection helper: resolves the current day (Daily) or whole month
+       (Monthly) into item arrays + a grand total, used by both Group Breakdown and Executive
+       Summary so they always agree on exactly what period is being shown ---------- */
+    function computeGrpSelection() {
+      const monthData = allMonths[`${grpYear}-${grpMonthNum}`];
+      if (!monthData || !monthData.days_covered) return null;
+      if (sumGranularity === 'daily') {
+        if (!grpSelectedDate || !monthData.daily_ae_items.hasOwnProperty(grpSelectedDate)) {
+          resetGrpSelectedDateToLatest();
+        }
+        const dateStr = grpSelectedDate;
+        const dayRec = monthData.daily_series.find(d => d.date === dateStr);
+        return {
+          aeItemsArr: monthData.daily_ae_items[dateStr] || [],
+          gpItemsArr: monthData.daily_gp_items[dateStr] || [],
+          grand: dayRec ? dayRec.total : 0,
+          patientIds: dayRec ? (dayRec.patient_ids || []) : [],
+          label: dayRec ? `${dayRec.day_name}, ${fmtDateLong(dateStr)}` : fmtDateLong(dateStr),
+          isNewFn: p => firstSeenMap[p] === dateStr,
+          payment: dayRec ? { cash: dayRec.cash, transfer: dayRec.transfer, credit: dayRec.credit, other_pay: dayRec.other_pay }
+                          : { cash: 0, transfer: 0, credit: 0, other_pay: 0 },
+          overdue: OVERDUE_BY_DATE.hasOwnProperty(dateStr) ? OVERDUE_BY_DATE[dateStr] : null,
+        };
+      }
+      const patientSet = new Set();
+      monthData.daily_series.forEach(d => (d.patient_ids || []).forEach(p => patientSet.add(p)));
+      const monthPrefix = `${grpYear}-${String(grpMonthNum).padStart(2,'0')}`;
+      return {
+        aeItemsArr: monthData.all_ae_items,
+        gpItemsArr: monthData.all_gp_items,
+        grand: monthData.summary.grand_total,
+        patientIds: Array.from(patientSet),
+        label: monthData.period,
+        isNewFn: p => (firstSeenMap[p] || '').startsWith(monthPrefix),
+        payment: monthData.summary.payment_breakdown,
+        overdue: OVERDUE_BY_MONTH.hasOwnProperty(`${grpYear}-${grpMonthNum}`) ? OVERDUE_BY_MONTH[`${grpYear}-${grpMonthNum}`] : null,
+      };
+    }
+
+    function buildGroupsFromItems(aeItemsArr, gpItemsArr) {
+      const aeMap = {}, gpMap = {};
+      aeItemsArr.forEach(it => {
+        if (!aeMap[it.cat]) aeMap[it.cat] = { revenue: 0, items: [] };
+        aeMap[it.cat].revenue += it.revenue;
+        aeMap[it.cat].items.push({ item: it.item, count: it.sessions, revenue: it.revenue });
+      });
+      gpItemsArr.forEach(it => {
+        const g = it.group || '(Ungrouped)';
+        if (!gpMap[g]) gpMap[g] = { revenue: 0, items: [] };
+        gpMap[g].revenue += it.revenue;
+        gpMap[g].items.push({ item: it.item, count: it.count, revenue: it.revenue });
+      });
+      const ae = Object.entries(aeMap).map(([name,v]) => ({ name, channel: 'AE', revenue: v.revenue, items: v.items })).sort((a,b) => b.revenue - a.revenue);
+      const gp = Object.entries(gpMap).map(([name,v]) => ({ name, channel: 'GP', revenue: v.revenue, items: v.items })).sort((a,b) => b.revenue - a.revenue);
+      const all = [...ae, ...gp].sort((a,b) => b.revenue - a.revenue);
+      return { ae, gp, all };
+    }
+
+    /* ---------- shared "Pick a Day" calendar at the top of page 2 (feeds Executive Summary's Daily view) ---------- */
+    function renderGrpCalendar() {
+      const monthData = allMonths[`${grpYear}-${grpMonthNum}`];
+      document.getElementById('grpCalDow').innerHTML = DOW.map(d => `<div class="cal-dow">${d}</div>`).join('');
+      const firstOfMonth = new Date(grpYear, grpMonthNum - 1, 1);
+      const daysInMonth = new Date(grpYear, grpMonthNum, 0).getDate();
+      const firstWeekday = (firstOfMonth.getDay() + 6) % 7;
+      const byDate = {};
+      (monthData ? monthData.daily_series : []).forEach(d => byDate[d.date] = d);
+      const maxDayTotal = monthData && monthData.daily_series.length ? Math.max(...monthData.daily_series.map(d => d.total), 1) : 1;
+
+      let html = '';
+      for (let i = 0; i < firstWeekday; i++) html += '<div class="cal-cell cal-empty"></div>';
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${grpYear}-${String(grpMonthNum).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const rec = byDate[dateStr];
+        if (rec) {
+          const ratio = rec.total / maxDayTotal;
+          const lightness = 85 - ratio * 55;
+          const bg = `hsl(152, 45%, ${lightness}%)`;
+          const sel = dateStr === grpSelectedDate ? ' selected' : '';
+          html += `<div class="cal-cell has-data${sel}" data-date="${dateStr}" style="background:${bg};">
+            <div class="cal-day-num">${day}</div><div class="cal-amt">${(rec.total/1000).toFixed(0)}K</div></div>`;
+        } else {
+          html += `<div class="cal-cell"><div class="cal-day-num">${day}</div><div class="cal-amt">no data</div></div>`;
+        }
+      }
+      document.getElementById('grpCalGrid').innerHTML = html;
+      document.querySelectorAll('#grpCalGrid .cal-cell.has-data').forEach(cell => {
+        cell.addEventListener('click', () => {
+          grpSelectedDate = cell.dataset.date;
+          renderGrpCalendar();
+          if (sumGranularity === 'daily') {
+            if (grpSubView === 'breakdown') { renderGroupPage(); } else { renderSummary(); }
+          }
+        });
+      });
+    }
+
+    const grpBarColors = { AE: '#1a7a7a', GP: '#1a7a4a' };
+
+    function renderGrpCardsInto(containerId, groups, grand, idPrefix) {
+      const el = document.getElementById(containerId);
+      const maxRev = Math.max(...groups.map(g => g.revenue), 1);
+      el.innerHTML = groups.map((g, idx) => {
+        const cardId = `${idPrefix}_${idx}`;
+        const pct = grand ? (g.revenue / grand * 100).toFixed(1) : '0.0';
+        const barPct = (g.revenue / maxRev * 100).toFixed(0);
+        const itemsSorted = g.items.slice().sort((a,b) => b.revenue - a.revenue);
+        const itemRows = itemsSorted.map(it => {
+          const itemPct = g.revenue ? (it.revenue / g.revenue * 100).toFixed(1) : '0.0';
+          return `<tr><td>${it.item}</td><td class="right">${it.count}</td><td class="right">${fmtTHB(it.revenue)}</td><td class="right">${itemPct}%</td></tr>`;
+        }).join('') || '<tr><td colspan="4" style="color:#b8c2d0;">No itemized data</td></tr>';
+        return `
+        <div class="grp-card" id="${cardId}">
+          <div class="grp-card-header" onclick="document.getElementById('${cardId}').classList.toggle('expanded')">
+            <div class="grp-card-left">
+              <span class="grp-chevron">&#9654;</span>
+              <span class="grp-channel-badge ${g.channel.toLowerCase()}">${g.channel}</span>
+              <span class="grp-name">${g.name}</span>
+            </div>
+            <div class="grp-card-right">
+              <div class="grp-bar-wrap"><div class="grp-bar-fill" style="width:${barPct}%;background:${grpBarColors[g.channel]};"></div></div>
+              <div class="grp-pct">${pct}%</div>
+              <div class="grp-revenue">THB ${fmtTHB(g.revenue)}</div>
+            </div>
+          </div>
+          <div class="grp-items">
+            <table class="data-table"><thead><tr><th>Item</th><th class="right">Qty</th><th class="right">Revenue</th><th class="right">%</th></tr></thead>
+            <tbody>${itemRows}</tbody></table>
+          </div>
+        </div>`;
+      }).join('') || '<div class="empty-note" style="padding:14px;">No groups in this selection.</div>';
+    }
+
+    function renderGroupPage() {
+      const sel = computeGrpSelection();
+      const emptyEl = document.getElementById('grpEmptyNote');
+      document.getElementById('grpTitle').textContent = `Revenue by Group — ${sel ? sel.label : MONTH_NAMES_JS[grpMonthNum-1] + ' ' + grpYear}`;
+
+      if (!sel) {
+        ['grpCardListAll','grpCardListAE','grpCardListGP'].forEach(id => document.getElementById(id).innerHTML = '');
+        emptyEl.style.display = 'block';
+        return;
+      }
+      emptyEl.style.display = 'none';
+
+      const { ae, gp, all } = buildGroupsFromItems(sel.aeItemsArr, sel.gpItemsArr);
+      renderGrpCardsInto('grpCardListAll', all, sel.grand, 'grpAll');
+      renderGrpCardsInto('grpCardListAE', ae, sel.grand, 'grpAE');
+      renderGrpCardsInto('grpCardListGP', gp, sel.grand, 'grpGP');
+    }
+
+    /* ---------- Executive Summary sub-page (daily / monthly, CEO-facing snapshot) ----------
+       AE/GP/Weight-Loss totals here are read straight from the same monthly/daily figures the
+       Group Breakdown and Main Dashboard pages already use — no separate revenue calculation.
+       Weight Loss is simply pulled out of the existing GP group list as its own KPI card
+       (Weight Loss is the single largest GP group most months, so it earns its own line);
+       "GP" on this page means GP excluding Weight Loss. New-vs-returning patient status is
+       derived from each patient's earliest appearance across all months currently loaded into
+       this dashboard — a patient whose first-ever appearance in the loaded data falls on the
+       selected day/month counts as "new"; this has the same limitation as any such system: a
+       patient last seen before the earliest loaded month would be miscounted as new. Overdue
+       is intentionally left as a pending placeholder until payment_overdue files are supplied. */
+    function isWeightLossGroup(g) { return (g || '').toLowerCase().includes('weight'); }
+
+    function buildFirstSeenMap() {
+      const allDays = [];
+      Object.keys(allMonths).forEach(k => { allMonths[k].daily_series.forEach(d => allDays.push(d)); });
+      allDays.sort((a,b) => a.date < b.date ? -1 : (a.date > b.date ? 1 : 0));
+      const map = {};
+      allDays.forEach(d => {
+        (d.patient_ids || []).forEach(p => { if (!(p in map)) map[p] = d.date; });
+      });
+      return map;
+    }
+    // firstSeenMap / earliestLoadedDate are (re)computed in loadBranchGlobals()
+    // above, once at load and again on every branch switch, since both depend
+    // on which branch's allMonths is currently active.
+
+    function aggregateItems(aeItemsArr, gpItemsArr) {
+      const aeTotal = aeItemsArr.reduce((s,it) => s + it.revenue, 0);
+      const wlTotal = gpItemsArr.filter(it => isWeightLossGroup(it.group)).reduce((s,it) => s + it.revenue, 0);
+      const gpAllTotal = gpItemsArr.reduce((s,it) => s + it.revenue, 0);
+      const gpExWlTotal = gpAllTotal - wlTotal;
+      const grand = aeTotal + gpAllTotal;
+      const catMap = {};
+      aeItemsArr.forEach(it => { catMap[it.cat] = (catMap[it.cat] || 0) + it.revenue; });
+      gpItemsArr.forEach(it => { const g = isWeightLossGroup(it.group) ? 'Weight Loss' : (it.group || '(Ungrouped)'); catMap[g] = (catMap[g] || 0) + it.revenue; });
+      const catList = Object.entries(catMap).map(([name,revenue]) => ({name, revenue})).sort((a,b) => b.revenue - a.revenue);
+      const topItems = [
+        ...aeItemsArr.map(it => ({ item: it.item, tag: it.cat, channel: 'AE', qty: it.sessions, revenue: it.revenue })),
+        ...gpItemsArr.map(it => ({ item: it.item, tag: isWeightLossGroup(it.group) ? 'Weight Loss' : it.group, channel: 'GP', qty: it.count, revenue: it.revenue })),
+      ].sort((a,b) => b.revenue - a.revenue).slice(0, 10);
+      return { aeTotal, wlTotal, gpExWlTotal, gpAllTotal, grand, catList, topItems };
+    }
+
+    function newOldSplit(patientIds, isNewFn) {
+      let newCount = 0, oldCount = 0;
+      patientIds.forEach(p => { if (isNewFn(p)) newCount++; else oldCount++; });
+      return { newCount, oldCount };
+    }
+
+    let sumCategoryChart = null, sumMixChart = null;
+
+    function renderSummaryKpis(label, agg, patientCount, newCount, oldCount, payment, overdue) {
+      const grand = agg.grand || 0;
+      const pct = v => grand ? (v/grand*100).toFixed(1) : '0.0';
+      const avgRev = patientCount ? grand / patientCount : 0;
+      const pay = payment || { cash: 0, transfer: 0, credit: 0, other_pay: 0 };
+      const paySourceRow = (labelTxt, val) => `<div class="kpi-source-item"><span class="kpi-source-dot"></span>${labelTxt} <b>THB ${fmtTHB(val)}</b></div>`;
+      const overdueCard = overdue
+        ? `<div class="kpi-card red"><div class="kpi-label">Overdue</div><div class="kpi-value">THB ${fmtTHB(overdue.balance)}</div><div class="kpi-margin">${overdue.invoices} outstanding invoice line${overdue.invoices === 1 ? '' : 's'}</div></div>`
+        : `<div class="kpi-card pending"><div class="kpi-label">Overdue<span class="kpi-pending-badge">Pending</span></div><div class="kpi-value">—</div><div class="kpi-margin">Awaiting payment_overdue file for this period</div></div>`;
+      document.getElementById('sumKpiWrap').innerHTML = `
+        <div class="kpi-row-flex">
+          <div class="kpi-card blue kpi-card-wide">
+            <div class="kpi-label">Total Revenue</div>
+            <div class="kpi-value">THB ${fmtTHB(grand)}</div>
+            <div class="kpi-margin">${label}</div>
+            <div class="kpi-source-list">
+              ${paySourceRow('Cash', pay.cash)}
+              ${paySourceRow('Transfer', pay.transfer)}
+              ${paySourceRow('Credit', pay.credit)}
+              ${paySourceRow('Other (SSO/Insurance/Voucher)', pay.other_pay)}
+            </div>
+          </div>
+          <div class="kpi-card green"><div class="kpi-label">GP (excl. Weight Loss)</div><div class="kpi-value">THB ${fmtTHB(agg.gpExWlTotal)}</div><div class="kpi-margin">${pct(agg.gpExWlTotal)}% of total</div></div>
+          <div class="kpi-card teal"><div class="kpi-label">AE — Aesthetic</div><div class="kpi-value">THB ${fmtTHB(agg.aeTotal)}</div><div class="kpi-margin">${pct(agg.aeTotal)}% of total</div></div>
+          <div class="kpi-card navy"><div class="kpi-label">Weight Loss</div><div class="kpi-value">THB ${fmtTHB(agg.wlTotal)}</div><div class="kpi-margin">${pct(agg.wlTotal)}% of total</div></div>
+          <div class="kpi-card gold"><div class="kpi-label">Unique Patients</div><div class="kpi-value">${patientCount}</div><div class="kpi-margin">New ${newCount} / Returning ${oldCount} &nbsp;•&nbsp; Avg THB ${fmtTHB(avgRev)}/patient</div></div>
+          ${overdueCard}
+        </div>`;
+    }
+
+    function renderSummaryChartAndTable(agg, chartSubLabel, topSubLabel) {
+      document.getElementById('sumChartSub').textContent = chartSubLabel;
+      document.getElementById('sumTopSub').textContent = topSubLabel;
+      if (sumCategoryChart) sumCategoryChart.destroy();
+      const catList = agg.catList.slice(0, 12);
+      sumCategoryChart = new Chart(document.getElementById('sumCategoryChart'), {
+        type: 'bar',
+        data: {
+          labels: catList.map(c => c.name),
+          datasets: [{ label: 'Revenue', data: catList.map(c => c.revenue), backgroundColor: '#2e6da4' }]
+        },
+        options: {
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false }, datalabels: { display: false } },
+          scales: { x: { ticks: { callback: v => (v/1000).toLocaleString()+'K' } } }
+        }
+      });
+      document.getElementById('sumTopBody').innerHTML = agg.topItems.map((it,i) =>
+        `<tr><td>${i+1}</td><td>${it.item}</td><td>${it.channel} — ${it.tag}</td><td class="right">${it.qty}</td><td class="right">${fmtTHB(it.revenue)}</td></tr>`
+      ).join('') || '<tr><td colspan="5" style="color:#b8c2d0;text-align:center;">No items in this selection</td></tr>';
+
+      document.getElementById('sumMixChartSub').textContent = chartSubLabel;
+      if (sumMixChart) sumMixChart.destroy();
+      const mixData = [agg.wlTotal, agg.aeTotal, agg.gpExWlTotal];
+      const mixHasData = mixData.some(v => v > 0);
+      sumMixChart = new Chart(document.getElementById('sumMixChart'), {
+        type: 'pie',
+        data: {
+          labels: ['Weight Loss', 'AE — Aesthetic', 'GP (excl. Weight Loss)'],
+          datasets: [{ data: mixHasData ? mixData : [1,1,1], backgroundColor: ['#1e3a5f', '#1a7a7a', '#1a7a4a'] }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } },
+            datalabels: { color: '#fff', font: { weight: 700, size: 13 },
+              formatter: (value, ctx) => {
+                if (!mixHasData) return '';
+                const total = ctx.chart.data.datasets[0].data.reduce((a,b) => a+b, 0);
+                return total ? (value/total*100).toFixed(1) + '%' : '';
+              } },
+            tooltip: { callbacks: { label: (ctx) => mixHasData ? `${ctx.label}: THB ${fmtTHB(ctx.parsed)}` : `${ctx.label}: no data` } }
+          }
+        }
+      });
+    }
+
+    let overdueChart = null;
+    function renderOverdueChart(year, monthNum, selectedDateOrNull) {
+      const monthData = allMonths[`${year}-${monthNum}`];
+      const canvas = document.getElementById('chartOverdue');
+      const sub = document.getElementById('overdueChartSub');
+      const dates = monthData && monthData.daily_series.length
+        ? monthData.daily_series.map(d => d.date)
+        : [];
+      if (!dates.length) {
+        if (overdueChart) { overdueChart.destroy(); overdueChart = null; }
+        sub.textContent = 'No income days for this month yet.';
+        return;
+      }
+      const hasAny = dates.some(d => OVERDUE_BY_DATE.hasOwnProperty(d));
+      sub.textContent = hasAny
+        ? 'Outstanding balance per day, from payment_overdue files'
+        : 'No payment_overdue file loaded for this month yet';
+      const values = dates.map(d => OVERDUE_BY_DATE.hasOwnProperty(d) ? OVERDUE_BY_DATE[d].balance : 0);
+      const colors = dates.map(d => d === selectedDateOrNull ? '#7a1a0a' : '#b8341a');
+      if (overdueChart) overdueChart.destroy();
+      overdueChart = new Chart(canvas, {
+        type: 'bar',
+        data: { labels: dates.map(fmtDateShort), datasets: [{ label: 'Overdue Balance', data: values, backgroundColor: colors }] },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false }, datalabels: { display: false },
+            tooltip: { callbacks: { afterLabel: (ctx) => {
+              const d = dates[ctx.dataIndex];
+              const rec = OVERDUE_BY_DATE[d];
+              return rec ? `${rec.invoices} outstanding invoice line(s)` : 'No overdue file for this day';
+            } } } },
+          scales: { y: { ticks: { callback: v => (v/1000).toLocaleString()+'K' } } }
+        }
+      });
+    }
+
+    /* ---------- Executive Summary render (calendar + Daily/Monthly toggle live at the top of page 2, shared with Group Breakdown) ---------- */
+    function renderSummary() {
+      const sel = computeGrpSelection();
+      if (!sel) {
+        document.getElementById('sumKpiWrap').innerHTML = '<div class="empty-note">No data for this period.</div>';
+        if (sumCategoryChart) { sumCategoryChart.destroy(); sumCategoryChart = null; }
+        if (sumMixChart) { sumMixChart.destroy(); sumMixChart = null; }
+        if (overdueChart) { overdueChart.destroy(); overdueChart = null; }
+        document.getElementById('sumTopBody').innerHTML = '';
+        document.getElementById('sumChartSub').textContent = '-';
+        document.getElementById('sumMixChartSub').textContent = '-';
+        document.getElementById('sumTopSub').textContent = '-';
+        document.getElementById('overdueChartSub').textContent = '-';
+        return;
+      }
+      const agg = aggregateItems(sel.aeItemsArr, sel.gpItemsArr);
+      const { newCount, oldCount } = newOldSplit(sel.patientIds, sel.isNewFn);
+      renderSummaryKpis(sel.label, agg, sel.patientIds.length, newCount, oldCount, sel.payment, sel.overdue);
+      renderSummaryChartAndTable(agg, `Income by category — ${sel.label}`, `Top items — ${sel.label}`);
+      renderOverdueChart(grpYear, grpMonthNum, sumGranularity === 'daily' ? grpSelectedDate : null);
+    }
+
+    /* ---------- shared range aggregation ---------- */
+    function getRangeAgg(startDate, endDate) {
+      const days = data.daily_series.filter(d => d.date >= startDate && d.date <= endDate);
+      const agg = { AE: 0, GP: 0, total: 0 };
+      const patientSet = new Set();
+      const aeMap = {}, gpMap = {}, aeCatMap = {};
+      for (const d of days) {
+        agg.AE += d.AE; agg.GP += d.GP; agg.total += d.total;
+        (d.patient_ids || []).forEach(p => patientSet.add(p));
+        (data.daily_ae_items[d.date] || []).forEach(it => {
+          const k = it.item + '|' + it.cat;
+          if (!aeMap[k]) aeMap[k] = { item: it.item, cat: it.cat, revenue: 0, sessions: 0 };
+          aeMap[k].revenue += it.revenue; aeMap[k].sessions += it.sessions;
+          aeCatMap[it.cat] = (aeCatMap[it.cat] || 0) + it.revenue;
+        });
+        (data.daily_gp_items[d.date] || []).forEach(it => {
+          const k = it.item + '|' + it.group;
+          if (!gpMap[k]) gpMap[k] = { item: it.item, group: it.group, revenue: 0, count: 0 };
+          gpMap[k].revenue += it.revenue; gpMap[k].count += it.count;
+        });
+      }
+      const aeList = Object.values(aeMap).sort((a,b) => b.revenue - a.revenue);
+      const gpList = Object.values(gpMap).sort((a,b) => b.revenue - a.revenue);
+      const aeCatList = Object.entries(aeCatMap).map(([category,revenue]) => ({category, revenue})).sort((a,b)=>b.revenue-a.revenue);
+      return { days, agg, uniquePatients: patientSet.size, topAE: aeList.slice(0,5), topGP: gpList.slice(0,5), aeCatList };
+    }
+
+    /* ---------- chart builders (destroy + recreate on month switch) ---------- */
+    function destroyCharts() {
+      [dailyLineChart, channelPieChart, aeCatChart, dowChart, movingAvgChart].forEach(c => { if (c) c.destroy(); });
+      dailyLineChart = channelPieChart = aeCatChart = dowChart = movingAvgChart = null;
+    }
+
+    const channelColors = ['#1a7a7a', '#2e6da4'];
+    const channelLabels = ['AE', 'GP'];
+    const aeCatColors = ['#1e3a5f','#2e6da4','#1a7a7a','#c8931a','#aab8c8','#7a5fb8'];
+
+    /* ---------- 30-day moving average (pulls trailing days from the prior month
+       so early-month dates aren't just averaging 1-2 days) ---------- */
+    function getCombinedDailySeries(year, monthNum) {
+      let prevY = year, prevM = monthNum - 1;
+      if (prevM < 1) { prevM = 12; prevY -= 1; }
+      const prevData = allMonths[`${prevY}-${prevM}`];
+      const curData = allMonths[`${year}-${monthNum}`];
+      const combined = [];
+      if (prevData) combined.push(...prevData.daily_series);
+      if (curData) combined.push(...curData.daily_series);
+      combined.sort((a,b) => a.date < b.date ? -1 : (a.date > b.date ? 1 : 0));
+      return combined;
+    }
+    function computeMovingAverageMap(combined, windowSize) {
+      const map = {};
+      for (let i = 0; i < combined.length; i++) {
+        const windowStart = Math.max(0, i - windowSize + 1);
+        const windowSlice = combined.slice(windowStart, i + 1);
+        const sum = windowSlice.reduce((a,d) => a + d.total, 0);
+        map[combined[i].date] = { ma: sum / windowSlice.length, n: windowSlice.length };
+      }
+      return map;
+    }
+
+    function buildCharts() {
+      destroyCharts();
+      const dailyLabels = data.daily_series.map(d => d.day_name + ' ' + fmtDateShort(d.date));
+      const baseRadius = 3, selectedRadius = 7;
+      dailyLineChart = new Chart(document.getElementById('chartDailyLine'), {
+        type: 'line',
+        data: {
+          labels: dailyLabels,
+          datasets: [
+            { label: 'Total', data: data.daily_series.map(d=>d.total), borderColor: '#000000', backgroundColor: 'transparent', borderWidth: 3, tension: 0.25, pointRadius: dailyLabels.map(()=>baseRadius) },
+            { label: 'AE', data: data.daily_series.map(d=>d.AE), borderColor: '#2563eb', backgroundColor: 'transparent', borderWidth: 2, tension: 0.25 },
+            { label: 'GP', data: data.daily_series.map(d=>d.GP), borderColor: '#16a34a', backgroundColor: 'transparent', borderWidth: 2, tension: 0.25 },
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false,
+          scales: { y: { ticks: { callback: v => (v/1000).toLocaleString()+'K' } } },
+          plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } }, datalabels: { display: false } } }
+      });
+      channelPieChart = new Chart(document.getElementById('chartChannelPie'), {
+        type: 'doughnut', data: { labels: channelLabels, datasets: [{ data: [data.summary.AE,data.summary.GP], backgroundColor: channelColors }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false },
+          datalabels: { color: '#fff', font: { weight: 700, size: 13 },
+            formatter: (value, ctx) => { const total = ctx.chart.data.datasets[0].data.reduce((a,b)=>a+b,0); return total ? (value/total*100).toFixed(1) + '%' : ''; } } } } });
+      aeCatChart = new Chart(document.getElementById('chartAECat'), {
+        type: 'pie', data: { labels: data.ae_by_category.map(d=>d.category), datasets: [{ data: data.ae_by_category.map(d=>d.revenue), backgroundColor: aeCatColors }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } },
+          datalabels: { color: '#fff', font: { weight: 700, size: 10 },
+            formatter: (value, ctx) => { const total = ctx.chart.data.datasets[0].data.reduce((a,b)=>a+b,0); return total ? (value/total*100).toFixed(1) + '%' : ''; } } } } });
+      dowChart = new Chart(document.getElementById('chartDow'), {
+        type: 'bar',
+        data: { labels: DOW, datasets: [{ label: 'Avg Total Revenue', data: DOW.map(()=>0), backgroundColor: '#2e6da4' }] },
+        options: { responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false }, datalabels: { display: false } },
+          scales: { y: { ticks: { callback: v => (v/1000).toLocaleString()+'K' } } } }
+      });
+
+      const combinedSeries = getCombinedDailySeries(curYear, curMonthNum);
+      const maMap = computeMovingAverageMap(combinedSeries, 30);
+      const maValues = data.daily_series.map(d => maMap[d.date] ? maMap[d.date].ma : d.total);
+      const maWindowN = data.daily_series.map(d => maMap[d.date] ? maMap[d.date].n : 1);
+      const expensePerDay = expensePerDayFor(currentBranch, curYear, curMonthNum);
+      const expenseLine = dailyLabels.map(() => expensePerDay);
+      movingAvgChart = new Chart(document.getElementById('chartMovingAvg'), {
+        type: 'line',
+        data: {
+          labels: dailyLabels,
+          datasets: [
+            { label: '30-Day Moving Avg', data: maValues, borderColor: '#1a7a4a', backgroundColor: 'rgba(26,122,74,0.12)', fill: true, borderWidth: 3, tension: 0.3, pointRadius: 2 },
+            { label: `Predicted Expense (THB ${expensePerDay.toLocaleString()}/day)`, data: expenseLine, borderColor: '#c0392b', backgroundColor: 'transparent', borderWidth: 2, borderDash: [7,5], pointRadius: 0, fill: false, tension: 0 },
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false,
+          scales: { y: { ticks: { callback: v => (v/1000).toLocaleString()+'K' } } },
+          plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } }, datalabels: { display: false },
+            tooltip: { callbacks: { afterLabel: (ctx) => ctx.datasetIndex === 0 ? `based on trailing ${maWindowN[ctx.dataIndex]} day(s)` : '' } } } }
+      });
+      const minWindowN = Math.min(...maWindowN);
+      document.getElementById('chartBadgeMA').textContent = minWindowN < 30 ? `up to ${Math.max(...maWindowN)}d window` : '30d window';
+    }
+
+    function updateChannelPie(agg) {
+      const vals = [agg.AE, agg.GP];
+      const tot = vals.reduce((a,b)=>a+b,0) || 1;
+      channelPieChart.data.datasets[0].data = vals;
+      channelPieChart.update();
+      document.getElementById('channelLegend').innerHTML = channelLabels.map((l,i) =>
+        `<div class="donut-legend-item"><div class="legend-dot" style="background:${channelColors[i]};"></div>${l} ${(vals[i]/tot*100).toFixed(1)}%</div>`
+      ).join('');
+    }
+    function updateAECatPie(aeCatList, aeTotal) {
+      if (!aeCatList.length) {
+        aeCatChart.data.labels = ['No AE revenue'];
+        aeCatChart.data.datasets[0].data = [1];
+        aeCatChart.data.datasets[0].backgroundColor = ['#e2e6ee'];
+      } else {
+        aeCatChart.data.labels = aeCatList.map(d=>d.category);
+        aeCatChart.data.datasets[0].data = aeCatList.map(d=>d.revenue);
+        aeCatChart.data.datasets[0].backgroundColor = aeCatColors;
+      }
+      aeCatChart.update();
+      document.getElementById('aeCatSub').textContent = `THB ${fmtTHB(aeTotal)} AE total in selection`;
+    }
+    function updateDowChart(days) {
+      const dowAgg = {};
+      days.forEach(d => {
+        if (!dowAgg[d.day_name]) dowAgg[d.day_name] = { sum: 0, count: 0 };
+        dowAgg[d.day_name].sum += d.total; dowAgg[d.day_name].count += 1;
+      });
+      const dowAvg = DOW.map(d => dowAgg[d] ? dowAgg[d].sum / dowAgg[d].count : 0);
+      const dowCounts = DOW.map(d => dowAgg[d] ? dowAgg[d].count : 0);
+      const maxOccurrence = Math.max(...dowCounts, 0);
+      dowChart.data.datasets[0].data = dowAvg;
+      dowChart.options.plugins.tooltip = { callbacks: { afterLabel: (ctx) => `n = ${dowCounts[ctx.dataIndex]} occurrence(s)` } };
+      dowChart.update();
+      document.getElementById('dowSub').textContent = maxOccurrence <= 1
+        ? 'Average total revenue by weekday — based on only 1 occurrence per weekday in this selection so far, so treat as a first read, not a trend'
+        : `Average total revenue by weekday — based on up to ${maxOccurrence} occurrences per day in this selection`;
+    }
+    function radiiForRange(startDate, endDate) {
+      return data.daily_series.map(d => (d.date >= startDate && d.date <= endDate) ? 7 : 3);
+    }
+    function applySelection(startDate, endDate, label) {
+      const r = getRangeAgg(startDate, endDate);
+      updateChannelPie(r.agg);
+      updateAECatPie(r.aeCatList, r.agg.AE);
+      updateDowChart(r.days);
+      dailyLineChart.data.datasets[0].pointRadius = radiiForRange(startDate, endDate);
+      dailyLineChart.update();
+      document.getElementById('nowShowingLabel').textContent = 'Showing: ' + label;
+    }
+
+    /* ---------- calendar ---------- */
+    document.getElementById('calDow').innerHTML = DOW.map(d => `<div class="cal-dow">${d}</div>`).join('');
+
+    function colorForAmount(amt, maxDayTotal) {
+      const ratio = amt / maxDayTotal;
+      const lightness = 85 - ratio * 55;
+      return `hsl(152, 45%, ${lightness}%)`;
+    }
+
+    function renderCalendar(year, monthNum) {
+      const firstOfMonth = new Date(year, monthNum - 1, 1);
+      const daysInMonth = new Date(year, monthNum, 0).getDate();
+      const firstWeekday = (firstOfMonth.getDay() + 6) % 7;
+      const maxDayTotal = data ? Math.max(...data.daily_series.map(d => d.total), 1) : 1;
+
+      let calHtml = '';
+      for (let i = 0; i < firstWeekday; i++) calHtml += '<div class="cal-cell cal-empty"></div>';
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${String(monthNum).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const rec = dailyByDate[dateStr];
+        if (rec) {
+          const bg = colorForAmount(rec.total, maxDayTotal);
+          calHtml += `<div class="cal-cell has-data" data-date="${dateStr}" style="background:${bg};">
+            <div class="cal-day-num">${day}</div><div class="cal-amt">${(rec.total/1000).toFixed(0)}K</div></div>`;
+        } else {
+          calHtml += `<div class="cal-cell"><div class="cal-day-num">${day}</div><div class="cal-amt">no data</div></div>`;
+        }
+      }
+      document.getElementById('calGrid').innerHTML = calHtml;
+      document.querySelectorAll('.cal-cell.has-data').forEach(cell => {
+        cell.addEventListener('click', () => showDayDetail(cell.dataset.date));
+      });
+    }
+
+    /* ---------- aggregate a day's items into higher-level medical categories ----------
+       AE items already carry a "cat" field (Botox, Filler, Meso, HIFU, Laser, Thread Lift, Other AE).
+       GP items carry a "group" field taken straight from the clinic's own department groupings in the
+       source data (Infectious disease, Endocrine system, Sexual Health, Weight loss, Cardiovascular
+       disease, Lab Analysis, Vaccine, etc.) — that's a genuine medical-category taxonomy already present
+       in the data, just never surfaced here. Grouping by these fields instead of showing raw item names
+       avoids inventing a new classification scheme. */
+    function aggregateByCategory(items, catField) {
+      const map = {};
+      items.forEach(it => {
+        const cat = it[catField] || 'Other';
+        map[cat] = (map[cat] || 0) + it.revenue;
+      });
+      return Object.entries(map).map(([cat, revenue]) => ({cat, revenue})).sort((a,b) => b.revenue - a.revenue);
+    }
+
+    function showDayDetail(dateStr) {
+      const rec = dailyByDate[dateStr];
+      if (!rec) return;
+      document.querySelectorAll('.cal-cell.selected').forEach(c => c.classList.remove('selected'));
+      const cell = document.querySelector(`.cal-cell[data-date="${dateStr}"]`);
+      if (cell) cell.classList.add('selected');
+
+      const aeCats = aggregateByCategory(data.daily_ae_items[dateStr] || [], 'cat').slice(0,5);
+      const gpCats = aggregateByCategory(data.daily_gp_items[dateStr] || [], 'group').slice(0,5);
+      const dayAEPct = v => rec.AE ? (v/rec.AE*100).toFixed(1) : '0.0';
+      const dayGPPct = v => rec.GP ? (v/rec.GP*100).toFixed(1) : '0.0';
+      const aeRowsHtml = aeCats.map(c => `<tr><td>${c.cat}</td><td class="right">${fmtTHB(c.revenue)}</td><td class="right">${dayAEPct(c.revenue)}%</td></tr>`).join('') || '<tr><td colspan="3" style="color:#b8c2d0;">No AE items</td></tr>';
+      const gpRowsHtml = gpCats.map(c => `<tr><td>${c.cat}</td><td class="right">${fmtTHB(c.revenue)}</td><td class="right">${dayGPPct(c.revenue)}%</td></tr>`).join('') || '<tr><td colspan="3" style="color:#b8c2d0;">No GP items</td></tr>';
+
+      document.getElementById('dayDetail').innerHTML = `
+        <div class="day-detail-title">${rec.day_name}, ${fmtDateLong(dateStr)}</div>
+        <div class="day-kpi-row">
+          <div class="day-kpi"><div class="day-kpi-label">Total</div><div class="day-kpi-value">${fmtTHB(rec.total)}</div></div>
+          <div class="day-kpi"><div class="day-kpi-label">Patients</div><div class="day-kpi-value">${rec.patients}</div></div>
+          <div class="day-kpi"><div class="day-kpi-label">AE</div><div class="day-kpi-value">${fmtTHB(rec.AE)}</div><div class="day-kpi-label" style="text-transform:none;font-weight:600;">${(rec.total ? (rec.AE/rec.total*100).toFixed(1) : '0.0')}% of day</div></div>
+          <div class="day-kpi"><div class="day-kpi-label">GP</div><div class="day-kpi-value">${fmtTHB(rec.GP)}</div><div class="day-kpi-label" style="text-transform:none;font-weight:600;">${(rec.total ? (rec.GP/rec.total*100).toFixed(1) : '0.0')}% of day</div></div>
+        </div>
+        <div style="display:flex; gap:16px;">
+          <div style="flex:1;">
+            <div style="font-size:11px;font-weight:700;color:#5a6f88;margin-bottom:4px;">TOP AE CATEGORIES</div>
+            <table class="day-mini-table">${aeRowsHtml}</table>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:11px;font-weight:700;color:#5a6f88;margin-bottom:4px;">TOP GP CATEGORIES</div>
+            <table class="day-mini-table">${gpRowsHtml}</table>
+          </div>
+        </div>`;
+
+      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('rangeStart').value = dateStr;
+      document.getElementById('rangeEnd').value = dateStr;
+      applySelection(dateStr, dateStr, `${rec.day_name}, ${dateStr} (single day)`);
+    }
+
+    /* ---------- duration picker wiring (bounds reset per month in renderMonth) ---------- */
+    function rangeLabel(start, end) {
+      if (start === end) {
+        const rec = dailyByDate[start];
+        return rec ? `${rec.day_name}, ${fmtDateLong(start)} (single day)` : fmtDateLong(start);
+      }
+      const days = data.daily_series.filter(d => d.date >= start && d.date <= end).length;
+      return `${fmtDateLong(start)} to ${fmtDateLong(end)} (${days} day${days===1?'':'s'})`;
+    }
+
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!data) return;
+        document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.cal-cell.selected').forEach(c => c.classList.remove('selected'));
+        const allDates = data.daily_series.map(d => d.date);
+        const val = btn.dataset.days;
+        let start, end;
+        if (val === 'all') {
+          start = allDates[0]; end = allDates[allDates.length-1];
+        } else {
+          const n = parseInt(val, 10);
+          const endIdx = allDates.length - 1;
+          const startIdx = Math.max(0, endIdx - (n - 1));
+          start = allDates[startIdx]; end = allDates[endIdx];
+        }
+        document.getElementById('rangeStart').value = start;
+        document.getElementById('rangeEnd').value = end;
+        applySelection(start, end, rangeLabel(start, end));
+      });
+    });
+    ['rangeStart', 'rangeEnd'].forEach(id => {
+      document.getElementById(id).addEventListener('change', () => {
+        if (!data) return;
+        const start = document.getElementById('rangeStart').value;
+        const end = document.getElementById('rangeEnd').value;
+        if (!start || !end || start > end) return;
+        document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.cal-cell.selected').forEach(c => c.classList.remove('selected'));
+        applySelection(start, end, rangeLabel(start, end));
+      });
+    });
+    document.getElementById('generateReportBtn').addEventListener('click', () => {
+      if (!data) { alert('No data available for this month yet.'); return; }
+      const start = document.getElementById('rangeStart').value;
+      const end = document.getElementById('rangeEnd').value;
+      if (!start || !end || start > end) {
+        alert('Please choose a valid start and end date.');
+        return;
+      }
+      const r = getRangeAgg(start, end);
+      const grandR = r.agg.AE + r.agg.GP;
+      const dayRowsHtml = r.days.map(d => `<tr><td>${d.day_name} ${fmtDateMed(d.date)}</td><td class="right">${fmtTHB(d.AE)}</td><td class="right">${fmtTHB(d.GP)}</td><td class="right">${fmtTHB(d.total)}</td><td class="right">${d.patients}</td></tr>`).join('');
+      const aeRowsR = r.topAE.map((it,i) => `<tr><td>${i+1}</td><td>${it.item}</td><td class="right">${fmtTHB(it.revenue)}</td></tr>`).join('') || '<tr><td colspan="3" style="color:#b8c2d0;">No AE revenue in range</td></tr>';
+      const gpRowsR = r.topGP.map((it,i) => `<tr><td>${i+1}</td><td>${it.item}</td><td class="right">${fmtTHB(it.revenue)}</td></tr>`).join('') || '<tr><td colspan="3" style="color:#b8c2d0;">No GP revenue in range</td></tr>';
+      document.getElementById('reportOutput').innerHTML = `
+        <div style="font-size:14px;font-weight:800;margin:10px 0 12px;">Report: ${fmtDateLong(start)} to ${fmtDateLong(end)} (${r.days.length} day${r.days.length===1?'':'s'})</div>
+        <div class="kpi-row" style="grid-template-columns:repeat(5,1fr);margin-bottom:14px;">
+          <div class="kpi-card blue"><div class="kpi-label">Grand Total</div><div class="kpi-value" style="font-size:19px;">THB ${fmtTHB(grandR)}</div></div>
+          <div class="kpi-card teal"><div class="kpi-label">AE</div><div class="kpi-value" style="font-size:19px;">THB ${fmtTHB(r.agg.AE)}</div></div>
+          <div class="kpi-card green"><div class="kpi-label">GP</div><div class="kpi-value" style="font-size:19px;">THB ${fmtTHB(r.agg.GP)}</div></div>
+          <div class="kpi-card gold"><div class="kpi-label">Unique Patients</div><div class="kpi-value" style="font-size:19px;">${r.uniquePatients}</div></div>
+          <div class="kpi-card navy"><div class="kpi-label">Avg / Day</div><div class="kpi-value" style="font-size:19px;">THB ${fmtTHB(grandR / Math.max(r.days.length,1))}</div></div>
+        </div>
+        <div class="grid-half">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:#5a6f88;margin-bottom:6px;">DAY-BY-DAY</div>
+            <table class="data-table"><thead><tr><th>Date</th><th class="right">AE</th><th class="right">GP</th><th class="right">Total</th><th class="right">Patients</th></tr></thead><tbody>${dayRowsHtml}</tbody></table>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:#5a6f88;margin-bottom:6px;">TOP ITEMS IN RANGE</div>
+            <table class="data-table"><thead><tr><th>#</th><th>AE Item</th><th class="right">Revenue</th></tr></thead><tbody>${aeRowsR}</tbody></table>
+            <table class="data-table" style="margin-top:8px;"><thead><tr><th>#</th><th>GP Item</th><th class="right">Revenue</th></tr></thead><tbody>${gpRowsR}</tbody></table>
+          </div>
+        </div>`;
+      document.getElementById('reportPlaceholder').style.display = 'none';
+      document.getElementById('reportOutput').classList.add('visible');
+    });
+
+    /* ---------- month switching (the core of what was requested) ---------- */
+    function resetReportUI() {
+      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('reportOutput').classList.remove('visible');
+      document.getElementById('reportOutput').innerHTML = '';
+      document.getElementById('reportPlaceholder').style.display = 'block';
+    }
+
+    function applyMonth(monthData) {
+      data = monthData;
+      dailyByDate = {};
+      data.daily_series.forEach(d => dailyByDate[d.date] = d);
+
+      const grand = data.summary.grand_total, ae = data.summary.AE, gp = data.summary.GP;
+      document.getElementById('kpiGrandTotal').textContent = 'THB ' + fmtTHB(grand);
+      document.getElementById('kpiGrandDays').textContent = data.days_covered + ' days covered';
+      document.getElementById('kpiAE').textContent = 'THB ' + fmtTHB(ae);
+      document.getElementById('kpiAEPct').textContent = (grand ? (ae/grand*100).toFixed(1) : '0.0') + '% of total';
+      document.getElementById('kpiGP').textContent = 'THB ' + fmtTHB(gp);
+      document.getElementById('kpiGPPct').textContent = (grand ? (gp/grand*100).toFixed(1) : '0.0') + '% of total';
+      document.getElementById('kpiPatients').textContent = data.unique_patients_total;
+      document.getElementById('kpiAvgRev').textContent = 'Avg THB ' + fmtTHB(data.avg_revenue_per_patient) + ' / patient';
+      document.getElementById('periodPill').textContent = data.period;
+      document.getElementById('chartBadgeDays').textContent = data.days_covered + ' days';
+
+      const lastDay = data.daily_series[data.daily_series.length - 1];
+      const topAE = data.top_ae_items[0] || {item:'-',cat:'-',revenue:0};
+      const topGP = data.top_gp_items[0] || {item:'-',revenue:0};
+      const monthName = data.period.split(' ')[0];
+      const topGPPct = grand ? (topGP.revenue/grand*100).toFixed(1) : '0.0';
+      const topAEPct = grand ? (topAE.revenue/grand*100).toFixed(1) : '0.0';
+      document.getElementById('insightText').innerHTML = data.days_covered
+        ? `${monthName} 1–${lastDay.date.slice(-2)} at ${data.branch}: THB ${fmtTHB(grand)} total revenue (100%) across ${data.days_covered} days, `
+          + `averaging THB ${fmtTHB(grand/data.days_covered)}/day. GP drives THB ${fmtTHB(gp)} (${(gp/grand*100).toFixed(1)}%) of revenue — `
+          + `${topGP.item} alone brought in THB ${fmtTHB(topGP.revenue)} (${topGPPct}% of total). AE is led by ${topAE.item} (${topAE.cat}) at THB ${fmtTHB(topAE.revenue)} (${topAEPct}% of total). `
+          + `${data.unique_patients_total} unique patients served, averaging THB ${fmtTHB(data.avg_revenue_per_patient)} revenue/patient.`
+        : 'No data for this period.';
+
+      document.getElementById('topAEBody').innerHTML = data.top_ae_items.map((it,i) =>
+        `<tr><td>${i+1}</td><td>${it.item}</td><td>${it.cat}</td><td class="right">${it.sessions}</td><td class="right">${fmtTHB(it.revenue)}</td><td class="right">${(ae ? (it.revenue/ae*100).toFixed(1) : '0.0')}%</td></tr>`
+      ).join('') || '<tr><td colspan="6" style="color:#b8c2d0;text-align:center;">No AE items</td></tr>';
+      document.getElementById('topGPBody').innerHTML = data.top_gp_items.map((it,i) =>
+        `<tr><td>${i+1}</td><td>${it.item}</td><td>${it.group}</td><td class="right">${it.count}</td><td class="right">${fmtTHB(it.revenue)}</td><td class="right">${(gp ? (it.revenue/gp*100).toFixed(1) : '0.0')}%</td></tr>`
+      ).join('') || '<tr><td colspan="6" style="color:#b8c2d0;text-align:center;">No GP items</td></tr>';
+
+      renderCalendar(curYear, curMonthNum);
+      buildCharts();
+      const allDates = data.daily_series.map(d => d.date);
+      const minDate = allDates[0], maxDate = allDates[allDates.length-1];
+      document.getElementById('rangeStart').min = minDate; document.getElementById('rangeStart').max = maxDate;
+      document.getElementById('rangeEnd').min = minDate; document.getElementById('rangeEnd').max = maxDate;
+      document.getElementById('rangeStart').value = minDate; document.getElementById('rangeEnd').value = maxDate;
+      resetReportUI();
+
+      if (data.daily_series.length) {
+        showDayDetail(lastDay.date);
+      } else {
+        applySelection(minDate, maxDate, `whole period (${data.period})`);
+      }
+    }
+
+    function applyEmptyMonth(year, monthNum) {
+      data = null;
+      dailyByDate = {};
+      const label = `${MONTH_NAMES_JS[monthNum-1]} ${year}`;
+      ['kpiGrandTotal','kpiAE','kpiGP'].forEach(id => document.getElementById(id).textContent = '—');
+      ['kpiGrandDays','kpiAEPct','kpiGPPct','kpiAvgRev'].forEach(id => document.getElementById(id).textContent = 'No data');
+      document.getElementById('kpiPatients').textContent = '—';
+      document.getElementById('periodPill').textContent = label;
+      document.getElementById('chartBadgeDays').textContent = '0 days';
+      document.getElementById('chartBadgeMA').textContent = '-';
+      document.getElementById('insightText').textContent =
+        `No income summary files found yet for ${label}. Once files are added to the Income_Summary folder and the pipeline is re-run, this will populate automatically.`;
+      document.getElementById('topAEBody').innerHTML = '<tr><td colspan="6" style="color:#b8c2d0;text-align:center;">No data for this period</td></tr>';
+      document.getElementById('topGPBody').innerHTML = '<tr><td colspan="6" style="color:#b8c2d0;text-align:center;">No data for this period</td></tr>';
+      renderCalendar(year, monthNum);
+      destroyCharts();
+      document.getElementById('dayDetail').innerHTML = '<div class="day-detail-placeholder">No data for this month</div>';
+      document.getElementById('nowShowingLabel').textContent = `Showing: no data for ${label}`;
+      document.getElementById('rangeStart').value = ''; document.getElementById('rangeEnd').value = '';
+      resetReportUI();
+    }
+
+    function renderMonth(year, monthNum) {
+      curYear = year; curMonthNum = monthNum;
+      monthSelect.value = String(monthNum);
+      yearSelect.value = String(year);
+      const key = `${year}-${monthNum}`;
+      const monthData = allMonths[key];
+      if (monthData) {
+        applyMonth(monthData);
+      } else {
+        applyEmptyMonth(year, monthNum);
+      }
+    }
+
+    /* ---------- Weight Loss page ---------- */
+    const WL_FAMILY_COLOR = { MOUNJARO: '#2E5AAC', WEGOVY: '#E07B39', OZEMPIC: '#3FA796', RYBELSUS: '#8E5572' };
+    const WL_FAMILY_LABEL = { MOUNJARO: 'Mounjaro', WEGOVY: 'Wegovy', OZEMPIC: 'Ozempic', RYBELSUS: 'Rybelsus' };
+    const WL_FAMILY_SORT  = { MOUNJARO: 0, WEGOVY: 1, OZEMPIC: 2, RYBELSUS: 3 };
+    const WL_CHART_ID     = { MOUNJARO: 'wlChartMounjaro', WEGOVY: 'wlChartWegovy', OZEMPIC: 'wlChartOzempic', RYBELSUS: 'wlChartRybelsus' };
+
+    let wlSelectedDate = null;
+    let wlFamilyCharts = { MOUNJARO: null, WEGOVY: null, OZEMPIC: null, RYBELSUS: null };
+    let wlGroupChart = null, wlCompareChart = null;
+    let wlCompareMode = 'monthly';
+    let wlCalYear = DEFAULT_YEAR, wlCalMonthNum = DEFAULT_MONTH;
+
+    // The month the KPI cards / item charts / comparison section treat as "current" —
+    // always the most recent month on record with weight-loss data, so this advances
+    // on its own as the pipeline picks up new months. Independent of the calendar,
+    // which the user can browse freely with its own prev/next + dropdowns.
+    function wlLatestKey() {
+      const keys = Object.keys(allMonths).filter(k => allMonths[k].weight_loss && allMonths[k].weight_loss.total_qty > 0);
+      if (!keys.length) return null;
+      keys.sort((a, b) => {
+        const [ay, am] = a.split('-').map(Number), [by, bm] = b.split('-').map(Number);
+        return (ay - by) || (am - bm);
+      });
+      return keys[keys.length - 1];
+    }
+    function wlAllDataKeys() {
+      return Object.keys(allMonths)
+        .filter(k => allMonths[k].weight_loss && allMonths[k].weight_loss.total_qty > 0)
+        .sort((a, b) => {
+          const [ay, am] = a.split('-').map(Number), [by, bm] = b.split('-').map(Number);
+          return (ay - by) || (am - bm);
+        });
+    }
+    function wlPrevMonthKey(year, monthNum) {
+      let y = year, m = monthNum - 1;
+      if (m < 1) { m = 12; y -= 1; }
+      return `${y}-${m}`;
+    }
+    function wlPctBadge(cur, prev) {
+      if (!prev) return '<span class="wl-badge-flat">—</span>';
+      const pct = (cur - prev) / prev * 100;
+      if (Math.abs(pct) < 0.5) return `<span class="wl-badge-flat">flat</span>`;
+      const cls = pct > 0 ? 'wl-badge-up' : 'wl-badge-down';
+      const arrow = pct > 0 ? '▲' : '▼';
+      return `<span class="${cls}">${arrow} ${Math.abs(pct).toFixed(0)}%</span>`;
+    }
+    function wlQuarterOf(monthNum) { return Math.ceil(monthNum / 3); }
+    function wlMonthsInQuarter(year, q) {
+      const startM = (q - 1) * 3 + 1;
+      return [startM, startM + 1, startM + 2].map(m => `${year}-${m}`);
+    }
+    function wlQuarterFamilyTotals(year, q) {
+      const tot = { MOUNJARO: 0, WEGOVY: 0, OZEMPIC: 0, RYBELSUS: 0 };
+      let any = false;
+      wlMonthsInQuarter(year, q).forEach(k => {
+        const wl = allMonths[k] && allMonths[k].weight_loss;
+        if (wl && wl.total_qty) {
+          any = true;
+          (wl.family_totals || []).forEach(f => tot[f.family] = (tot[f.family] || 0) + f.qty);
+        }
+      });
+      return any ? tot : null;
+    }
+    function wlAllQuarters() {
+      const seen = new Map();
+      wlAllDataKeys().forEach(k => {
+        const [y, m] = k.split('-').map(Number);
+        const q = wlQuarterOf(m);
+        seen.set(`${y}-Q${q}`, { year: y, q });
+      });
+      return Array.from(seen.entries())
+        .sort((a, b) => (a[1].year - b[1].year) || (a[1].q - b[1].q))
+        .map(([key]) => key);
+    }
+
+    /* ---------- KPI + charts + comparison (driven by wlLatestKey) ---------- */
+    function refreshWlActiveView() {
+      const latestKey = wlLatestKey();
+      const emptyEl = document.getElementById('wlEmptyNote');
+      const contentEl = document.getElementById('wlContent');
+
+      if (!latestKey) {
+        emptyEl.style.display = 'block';
+        contentEl.style.display = 'none';
+        document.getElementById('wlKpiRow').innerHTML = ['Total Pens','Mounjaro','Wegovy','Ozempic','Rybelsus'].map(l =>
+          `<div class="kpi-card pending"><div class="kpi-label">${l}</div><div class="kpi-value">—</div><div class="kpi-margin">No data</div></div>`
+        ).join('');
+        return;
+      }
+      emptyEl.style.display = 'none';
+      contentEl.style.display = 'block';
+
+      const [ly, lm] = latestKey.split('-').map(Number);
+      const wl = allMonths[latestKey].weight_loss;
+      document.getElementById('wlLatestLabel').textContent = `Showing: ${MONTH_NAMES_JS[lm-1]} ${ly} (latest month on record)`;
+
+      const prevKey = wlPrevMonthKey(ly, lm);
+      const [prevY, prevM] = prevKey.split('-').map(Number);
+      const prevWl = allMonths[prevKey] ? allMonths[prevKey].weight_loss : null;
+      const famQty = {}; (wl.family_totals || []).forEach(f => famQty[f.family] = f.qty);
+      const prevFamQty = {}; if (prevWl) (prevWl.family_totals || []).forEach(f => prevFamQty[f.family] = f.qty);
+
+      const kpiDefs = [
+        { label: 'Total Pens', cls: 'wl-total', val: wl.total_qty, prev: prevWl ? prevWl.total_qty : null },
+        { label: 'Mounjaro', cls: 'wl-mjr', val: famQty.MOUNJARO || 0, prev: prevFamQty.MOUNJARO },
+        { label: 'Wegovy', cls: 'wl-wgv', val: famQty.WEGOVY || 0, prev: prevFamQty.WEGOVY },
+        { label: 'Ozempic', cls: 'wl-ozm', val: famQty.OZEMPIC || 0, prev: prevFamQty.OZEMPIC },
+        { label: 'Rybelsus', cls: 'wl-ryb', val: famQty.RYBELSUS || 0, prev: prevFamQty.RYBELSUS },
+      ];
+      document.getElementById('wlKpiRow').innerHTML = kpiDefs.map(k => `
+        <div class="kpi-card ${k.cls}">
+          <div class="kpi-label">${k.label}</div>
+          <div class="kpi-value">${k.val.toLocaleString()}</div>
+          <div class="kpi-margin">${wlPctBadge(k.val, k.prev)} vs ${MONTH_NAMES_JS[prevM-1]} ${prevY}</div>
+        </div>`).join('');
+
+      renderWlFamilyCharts(wl);
+      renderWlGroupChart(wl);
+      wlPopulateCompareControls(latestKey);
+      renderWlCompareChart();
+
+      // Calendar keeps its own independently-browsable position; only snap it to
+      // the latest month the first time (or after a branch switch resets it).
+      if (wlCalYear === null) { wlCalYear = ly; wlCalMonthNum = lm; }
+      renderWlCalendar();
+    }
+
+    function wlShortLabel(item, family) {
+      return item
+        .replace('MOUNJARO KWIKPEN', '').replace('WEGOVY', '').replace('RYBELSUS', '')
+        .replace('1 MG PRE-FILLED PEN', '1mg').replace('FLEX TOUCH', '').replace('MG', 'mg')
+        .replace(/\s+/g, ' ').trim() || item;
+    }
+
+    function renderWlFamilyCharts(wl) {
+      const items = wl.item_totals || [];
+      ['MOUNJARO','WEGOVY','OZEMPIC','RYBELSUS'].forEach(fam => {
+        const famItems = items.filter(it => it.family === fam);
+        const labels = famItems.map(it => wlShortLabel(it.item, fam));
+        if (wlFamilyCharts[fam]) wlFamilyCharts[fam].destroy();
+        wlFamilyCharts[fam] = new Chart(document.getElementById(WL_CHART_ID[fam]), {
+          type: 'bar',
+          data: { labels, datasets: [{ label: WL_FAMILY_LABEL[fam], data: famItems.map(it => it.qty),
+            backgroundColor: WL_FAMILY_COLOR[fam], borderRadius: 4 }] },
+          options: { responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, datalabels: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+        });
+      });
+    }
+
+    function renderWlGroupChart(wl) {
+      const fams = ['MOUNJARO','WEGOVY','OZEMPIC','RYBELSUS'];
+      const famQty = {}; (wl.family_totals || []).forEach(f => famQty[f.family] = f.qty);
+      if (wlGroupChart) wlGroupChart.destroy();
+      wlGroupChart = new Chart(document.getElementById('wlGroupChart'), {
+        type: 'bar',
+        data: { labels: fams.map(f => WL_FAMILY_LABEL[f]), datasets: [{ label: 'Pens',
+          data: fams.map(f => famQty[f] || 0), backgroundColor: fams.map(f => WL_FAMILY_COLOR[f]), borderRadius: 4 }] },
+        options: { responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false }, datalabels: { display: false } },
+          scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+      });
+    }
+
+    /* ---------- Month / Quarter comparison ---------- */
+    function wlPopulateCompareControls(latestKey) {
+      const [ly, lm] = latestKey.split('-').map(Number);
+      const monthSel = document.getElementById('wlCompareMonthSelect');
+      const otherMonths = wlAllDataKeys().filter(k => k !== latestKey).reverse(); // most recent first
+      const prevOfLatest = wlPrevMonthKey(ly, lm);
+      monthSel.innerHTML = otherMonths.map(k => {
+        const [y, m] = k.split('-').map(Number);
+        return `<option value="${k}">${MONTH_NAMES_JS[m-1]} ${y}</option>`;
+      }).join('') || '<option value="">No other months available</option>';
+      if (otherMonths.includes(prevOfLatest)) monthSel.value = prevOfLatest;
+
+      const curQ = `${ly}-Q${wlQuarterOf(lm)}`;
+      const quarterSel = document.getElementById('wlCompareQuarterSelect');
+      const otherQuarters = wlAllQuarters().filter(k => k !== curQ).reverse();
+      quarterSel.innerHTML = otherQuarters.map(k => {
+        const [y, qStr] = k.split('-Q');
+        return `<option value="${k}">Q${qStr} ${y}</option>`;
+      }).join('') || '<option value="">No other quarters available</option>';
+    }
+
+    function renderWlCompareChart() {
+      const latestKey = wlLatestKey();
+      if (!latestKey) return;
+      const [ly, lm] = latestKey.split('-').map(Number);
+      const curWl = allMonths[latestKey].weight_loss;
+      const curFam = {}; (curWl.family_totals || []).forEach(f => curFam[f.family] = f.qty);
+      const fams = ['MOUNJARO','WEGOVY','OZEMPIC','RYBELSUS'];
+      const curLabel = `${MONTH_NAMES_JS[lm-1]} ${ly}`;
+
+      let compareLabel = 'No comparison selected', compareFam = {};
+      if (wlCompareMode === 'monthly') {
+        const selKey = document.getElementById('wlCompareMonthSelect').value;
+        const wl2 = selKey && allMonths[selKey] ? allMonths[selKey].weight_loss : null;
+        if (wl2) {
+          (wl2.family_totals || []).forEach(f => compareFam[f.family] = f.qty);
+          const [sy, sm] = selKey.split('-').map(Number);
+          compareLabel = `${MONTH_NAMES_JS[sm-1]} ${sy}`;
+        }
+      } else {
+        const selKey = document.getElementById('wlCompareQuarterSelect').value;
+        if (selKey) {
+          const [qy, qStr] = selKey.split('-Q');
+          compareFam = wlQuarterFamilyTotals(parseInt(qy,10), parseInt(qStr,10)) || {};
+          compareLabel = `Q${qStr} ${qy}`;
+        }
+        const curQLabel = `Q${wlQuarterOf(lm)} ${ly}`;
+        renderWlCompareChartInner(fams, curQLabel, wlQuarterFamilyTotals(ly, wlQuarterOf(lm)) || curFam, compareLabel, compareFam);
+        return;
+      }
+      renderWlCompareChartInner(fams, curLabel, curFam, compareLabel, compareFam);
+    }
+
+    function renderWlCompareChartInner(fams, labelA, famA, labelB, famB) {
+      if (wlCompareChart) wlCompareChart.destroy();
+      wlCompareChart = new Chart(document.getElementById('wlCompareChart'), {
+        type: 'bar',
+        data: {
+          labels: fams.map(f => WL_FAMILY_LABEL[f]),
+          datasets: [
+            { label: labelA, data: fams.map(f => famA[f] || 0), backgroundColor: fams.map(f => WL_FAMILY_COLOR[f]), borderRadius: 4 },
+            { label: labelB, data: fams.map(f => famB[f] || 0), backgroundColor: fams.map(f => WL_FAMILY_COLOR[f] + '55'), borderRadius: 4 },
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' }, datalabels: { display: false } },
+          scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+      });
+    }
+
+    document.getElementById('wlCompareModeToggle').addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-mode]');
+      if (!btn) return;
+      document.querySelectorAll('#wlCompareModeToggle button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      wlCompareMode = btn.dataset.mode;
+      document.getElementById('wlCompareMonthlyControls').style.display = wlCompareMode === 'monthly' ? 'flex' : 'none';
+      document.getElementById('wlCompareQuarterlyControls').style.display = wlCompareMode === 'quarterly' ? 'flex' : 'none';
+      renderWlCompareChart();
+    });
+    document.getElementById('wlCompareMonthSelect').addEventListener('change', renderWlCompareChart);
+    document.getElementById('wlCompareQuarterSelect').addEventListener('change', renderWlCompareChart);
+
+    /* ---------- Calendar (own month/year navigation, independent of the section above) ---------- */
+    const wlCalMonthSelect = document.getElementById('wlCalMonthSelect');
+    wlCalMonthSelect.innerHTML = MONTH_NAMES_JS.map((m,i) => `<option value="${i+1}">${m}</option>`).join('');
+    const wlCalYearSelect = document.getElementById('wlCalYearSelect');
+    {
+      let opts = '';
+      for (let y = YEAR_MIN; y <= YEAR_MAX; y++) opts += `<option value="${y}">${y}</option>`;
+      wlCalYearSelect.innerHTML = opts;
+    }
+    wlCalMonthSelect.addEventListener('change', () => {
+      wlCalMonthNum = parseInt(wlCalMonthSelect.value, 10);
+      wlSelectedDate = null;
+      renderWlCalendar();
+    });
+    wlCalYearSelect.addEventListener('change', () => {
+      wlCalYear = parseInt(wlCalYearSelect.value, 10);
+      wlSelectedDate = null;
+      renderWlCalendar();
+    });
+    document.getElementById('wlCalPrev').addEventListener('click', () => {
+      wlCalMonthNum -= 1;
+      if (wlCalMonthNum < 1) { wlCalMonthNum = 12; wlCalYear -= 1; }
+      wlSelectedDate = null;
+      renderWlCalendar();
+    });
+    document.getElementById('wlCalNext').addEventListener('click', () => {
+      wlCalMonthNum += 1;
+      if (wlCalMonthNum > 12) { wlCalMonthNum = 1; wlCalYear += 1; }
+      wlSelectedDate = null;
+      renderWlCalendar();
+    });
+
+    function renderWlCalendar() {
+      if (wlCalYear === null) return;
+      wlCalMonthSelect.value = String(wlCalMonthNum);
+      wlCalYearSelect.value = String(wlCalYear);
+      document.getElementById('wlCalDow').innerHTML = DOW.map(d => `<div class="cal-dow">${d}</div>`).join('');
+      const key = `${wlCalYear}-${wlCalMonthNum}`;
+      const monthData = allMonths[key];
+      const wl = monthData ? monthData.weight_loss : null;
+      const daily = wl ? wl.daily : {};
+      const firstOfMonth = new Date(wlCalYear, wlCalMonthNum - 1, 1);
+      const daysInMonth = new Date(wlCalYear, wlCalMonthNum, 0).getDate();
+      const firstWeekday = (firstOfMonth.getDay() + 6) % 7;
+      const dayVals = Object.values(daily).map(d => d.total);
+      const maxTotal = dayVals.length ? Math.max(...dayVals, 1) : 1;
+
+      let html = '';
+      for (let i = 0; i < firstWeekday; i++) html += '<div class="cal-cell cal-empty"></div>';
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${wlCalYear}-${String(wlCalMonthNum).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const rec = daily[dateStr];
+        if (rec) {
+          const ratio = rec.total / maxTotal;
+          const lightness = 85 - ratio * 55;
+          const bg = `hsl(228, 45%, ${lightness}%)`;
+          const sel = dateStr === wlSelectedDate ? ' selected' : '';
+          const txtColor = ratio > 0.4 ? '#fff' : '#1a2332';
+          html += `<div class="cal-cell has-data${sel}" data-date="${dateStr}" style="background:${bg};">
+            <div class="cal-day-num" style="color:${txtColor};">${day}</div><div class="cal-amt" style="color:${txtColor};">${rec.total} pens</div></div>`;
+        } else {
+          html += `<div class="cal-cell"><div class="cal-day-num">${day}</div><div class="cal-amt">no data</div></div>`;
+        }
+      }
+      document.getElementById('wlCalGrid').innerHTML = html;
+      document.querySelectorAll('#wlCalGrid .cal-cell.has-data').forEach(cell => {
+        cell.addEventListener('click', () => {
+          wlSelectedDate = cell.dataset.date;
+          renderWlCalendar();
+        });
+      });
+      if (wlSelectedDate && daily[wlSelectedDate]) {
+        renderWlDayDetail(daily[wlSelectedDate], wlSelectedDate);
+      } else {
+        document.getElementById('wlDayDetail').innerHTML = '<div class="day-detail-placeholder">Click a day on the calendar to see its pen breakdown</div>';
+      }
+    }
+
+    function renderWlDayDetail(rec, dateStr) {
+      if (!rec) return;
+      const rows = Object.keys(rec).filter(k => k !== 'total').sort((a,b) => rec[b]-rec[a])
+        .map(k => `<tr><td>${k}</td><td class="right">${rec[k]}</td></tr>`).join('') || '<tr><td colspan="2" style="color:#b8c2d0;">No pens</td></tr>';
+      document.getElementById('wlDayDetail').innerHTML = `
+        <div class="day-detail-title">${fmtDateLong(dateStr)}</div>
+        <div class="day-kpi-row" style="grid-template-columns: 1fr;"><div class="day-kpi"><div class="day-kpi-label">Total Pens</div><div class="day-kpi-value">${rec.total}</div></div></div>
+        <table class="day-mini-table"><tbody>${rows}</tbody></table>`;
+    }
+
+    renderMonth(DEFAULT_YEAR, DEFAULT_MONTH);
+    </script>
+    </body>
+    </html>
+    
