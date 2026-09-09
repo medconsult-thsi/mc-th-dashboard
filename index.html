@@ -25,10 +25,12 @@
     .kpi-card { background: #fff; border-radius: 12px; padding: 18px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.07); border-top: 4px solid transparent; }
     .kpi-card.green { border-top-color: #1a7a4a; } .kpi-card.blue { border-top-color: #2e6da4; }
     .kpi-card.teal { border-top-color: #1a7a7a; } .kpi-card.gold { border-top-color: #c8931a; } .kpi-card.navy { border-top-color: #1e3a5f; }
+    .kpi-card.amber { border-top-color: #b5723a; }
     .kpi-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #4f6278; margin-bottom: 6px; }
     .kpi-value { font-size: 25px; font-weight: 800; line-height: 1.1; }
     .kpi-card.green .kpi-value { color: #1a5a34; } .kpi-card.blue .kpi-value { color: #1e3a5f; }
     .kpi-card.teal .kpi-value { color: #1a7a7a; } .kpi-card.gold .kpi-value { color: #9c7315; } .kpi-card.navy .kpi-value { color: #1e3a5f; }
+    .kpi-card.amber .kpi-value { color: #8a5423; }
     .kpi-margin { font-size: 13px; color: #3d4f63; margin-top: 4px; }
     .insight-bar { background: linear-gradient(135deg, #1a5a34, #2e7a50); color: #fff; border-radius: 10px; padding: 14px 20px;
       margin-bottom: 18px; display: flex; align-items: center; gap: 12px; font-size: 14px; }
@@ -207,7 +209,8 @@
     </div>
     <div class="page-view active" id="pageMain">
     <div class="page">
-      <div class="kpi-row">
+      <div class="kpi-row" style="grid-template-columns:repeat(5,1fr);">
+        <div class="kpi-card amber"><div class="kpi-label">Prediction</div><div class="kpi-value" id="kpiPredicted">-</div><div class="kpi-margin" id="kpiPredictedSub">-</div></div>
         <div class="kpi-card blue"><div class="kpi-label">Grand Total Revenue</div><div class="kpi-value" id="kpiGrandTotal">-</div><div class="kpi-margin" id="kpiGrandDays">-</div></div>
         <div class="kpi-card teal"><div class="kpi-label">AE — Aesthetic</div><div class="kpi-value" id="kpiAE">-</div><div class="kpi-margin" id="kpiAEPct">-</div></div>
         <div class="kpi-card green"><div class="kpi-label">GP — General Practice</div><div class="kpi-value" id="kpiGP">-</div><div class="kpi-margin" id="kpiGPPct">-</div></div>
@@ -457,6 +460,99 @@
     const YEAR_MAX = 2028;
     const MONTH_NAMES_JS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     const DOW = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+    /* ---------- Prediction (moving average + day-of-week weighting) ----------
+       Same method used in the internal budget forecast tool:
+       1) A month's predicted total = simple moving average of the trailing
+          (up to 3) complete prior months' grand_total for this branch.
+       2) That monthly total is split across the days of the target month
+          using each weekday's historical average share of revenue (computed
+          from every logged day across all months for this branch) — a flat,
+          even split is used instead until at least ~21 sampled days exist,
+          since a weekday pattern isn't trustworthy before that.
+       The daily figures always sum back to the monthly predicted total
+       exactly (up to floating-point rounding), by construction. */
+    function priorCompleteMonthKeys(year, monthNum) {
+      return Object.keys(allMonths).filter(k => {
+        const m = allMonths[k];
+        return (m.year < year) || (m.year === year && m.month_num < monthNum);
+      }).sort((a, b) => {
+        const ma = allMonths[a], mb = allMonths[b];
+        return (ma.year - mb.year) || (ma.month_num - mb.month_num);
+      });
+    }
+    function monthlyPredictedFor(year, monthNum) {
+      const priors = priorCompleteMonthKeys(year, monthNum);
+      if (!priors.length) return null;
+      const win = priors.slice(-3);
+      const total = win.reduce((s, k) => s + allMonths[k].summary.grand_total, 0);
+      return total / win.length;
+    }
+    function computeWeekdayFactors() {
+      const sums = {}, counts = {};
+      DOW.forEach(d => { sums[d] = 0; counts[d] = 0; });
+      let totalSampled = 0;
+      Object.keys(allMonths).forEach(k => {
+        allMonths[k].daily_series.forEach(d => {
+          if (!sums.hasOwnProperty(d.day_name)) return;
+          sums[d.day_name] += d.total;
+          counts[d.day_name] += 1;
+          totalSampled += 1;
+        });
+      });
+      if (totalSampled < 21) return null;
+      const known = DOW.filter(d => counts[d] > 0).map(d => sums[d] / counts[d]);
+      const fallbackAvg = known.reduce((a, b) => a + b, 0) / known.length;
+      const factors = {};
+      DOW.forEach(d => { factors[d] = counts[d] > 0 ? sums[d] / counts[d] : fallbackAvg; });
+      return factors;
+    }
+    function daysInMonthJS(year, monthNum) { return new Date(year, monthNum, 0).getDate(); }
+    function distributeMonthlyPrediction(year, monthNum, predictedTotal) {
+      const totalDays = daysInMonthJS(year, monthNum);
+      const factors = computeWeekdayFactors();
+      const raw = [];
+      for (let d = 1; d <= totalDays; d++) {
+        const jsDow = new Date(year, monthNum - 1, d).getDay(); // 0=Sun..6=Sat
+        const dow = DOW[(jsDow + 6) % 7]; // convert to DOW's Mon-first order
+        raw.push(factors ? factors[dow] : 1);
+      }
+      const sumRaw = raw.reduce((a, b) => a + b, 0) || 1;
+      return { values: raw.map(r => predictedTotal * (r / sumRaw)), weighted: !!factors };
+    }
+    function predictedInfoFor(year, monthNum, daysCovered) {
+      const predictedTotal = monthlyPredictedFor(year, monthNum);
+      if (predictedTotal === null) return null;
+      const dist = distributeMonthlyPrediction(year, monthNum, predictedTotal);
+      const totalDays = dist.values.length;
+      const isPartial = !!daysCovered && daysCovered < totalDays;
+      const upto = isPartial ? daysCovered : totalDays;
+      let sumToDate = 0;
+      for (let i = 0; i < upto; i++) sumToDate += dist.values[i];
+      return { predictedTotal, sumToDate, upto, totalDays, weighted: dist.weighted, isPartial };
+    }
+    function renderPredictionKpi(year, monthNum, daysCovered, actualSoFar) {
+      const pred = predictedInfoFor(year, monthNum, daysCovered);
+      const valEl = document.getElementById('kpiPredicted');
+      const subEl = document.getElementById('kpiPredictedSub');
+      if (!pred) {
+        valEl.textContent = '—';
+        subEl.textContent = 'Not enough prior months yet';
+        return;
+      }
+      const methodNote = pred.weighted ? '' : ' · flat split (building day-of-week history)';
+      if (actualSoFar === null || actualSoFar === undefined) {
+        valEl.textContent = 'THB ' + fmtTHB(pred.predictedTotal);
+        subEl.textContent = `Full-month forecast — no actuals logged yet${methodNote}`;
+        return;
+      }
+      valEl.textContent = 'THB ' + fmtTHB(pred.sumToDate);
+      const diff = actualSoFar - pred.sumToDate;
+      const diffPct = pred.sumToDate ? (diff / pred.sumToDate * 100) : 0;
+      const sign = diff >= 0 ? '+' : '';
+      const scopeLabel = pred.isPartial ? `through day ${pred.upto}` : 'full month';
+      subEl.textContent = `${sign}THB ${fmtTHB(diff)} (${sign}${diffPct.toFixed(1)}%) vs actual, ${scopeLabel}${methodNote}`;
+    }
 
     /* ---------- predicted daily expense reference line ----------
        Starting estimate only, per branch — THB 400,000/day for Thonglor,
@@ -1369,6 +1465,7 @@
       document.getElementById('kpiGPPct').textContent = (grand ? (gp/grand*100).toFixed(1) : '0.0') + '% of total';
       document.getElementById('kpiPatients').textContent = data.unique_patients_total;
       document.getElementById('kpiAvgRev').textContent = 'Avg THB ' + fmtTHB(data.avg_revenue_per_patient) + ' / patient';
+      renderPredictionKpi(curYear, curMonthNum, data.days_covered, grand);
       document.getElementById('periodPill').textContent = data.period;
       document.getElementById('chartBadgeDays').textContent = data.days_covered + ' days';
 
@@ -1415,6 +1512,7 @@
       ['kpiGrandTotal','kpiAE','kpiGP'].forEach(id => document.getElementById(id).textContent = '—');
       ['kpiGrandDays','kpiAEPct','kpiGPPct','kpiAvgRev'].forEach(id => document.getElementById(id).textContent = 'No data');
       document.getElementById('kpiPatients').textContent = '—';
+      renderPredictionKpi(year, monthNum, 0, null);
       document.getElementById('periodPill').textContent = label;
       document.getElementById('chartBadgeDays').textContent = '0 days';
       document.getElementById('chartBadgeMA').textContent = '-';
