@@ -1,0 +1,1453 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MedConsult Budget Forecast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#F6F3EC;
+  --surface:#FFFFFF;
+  --surface-2:#EFEAE0;
+  --ink:#1C2420;
+  --ink-soft:#5B6660;
+  --ink-faint:#96988C;
+  --line:#DCD5C6;
+  --accent:#0E6E63;
+  --accent-soft:#E3EFEA;
+  --accent-2:#B5723A;
+  --accent-2-soft:#F4E7D8;
+  --good:#2F8F5B;
+  --good-soft:#E4F3EA;
+  --bad:#B2402F;
+  --bad-soft:#FBE7E3;
+  --shadow:0 1px 2px rgba(28,36,32,.06), 0 10px 28px -16px rgba(28,36,32,.18);
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#10161A;
+    --surface:#171F23;
+    --surface-2:#1C262A;
+    --ink:#E7ECE7;
+    --ink-soft:#9CA9A1;
+    --ink-faint:#616F68;
+    --line:#293338;
+    --accent:#3FC0AC;
+    --accent-soft:rgba(63,192,172,.14);
+    --accent-2:#E1A667;
+    --accent-2-soft:rgba(225,166,103,.14);
+    --good:#57C48A;
+    --good-soft:rgba(87,196,138,.14);
+    --bad:#E2776A;
+    --bad-soft:rgba(226,119,106,.14);
+    --shadow:0 1px 2px rgba(0,0,0,.35), 0 10px 28px -16px rgba(0,0,0,.55);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#10161A;
+  --surface:#171F23;
+  --surface-2:#1C262A;
+  --ink:#E7ECE7;
+  --ink-soft:#9CA9A1;
+  --ink-faint:#616F68;
+  --line:#293338;
+  --accent:#3FC0AC;
+  --accent-soft:rgba(63,192,172,.14);
+  --accent-2:#E1A667;
+  --accent-2-soft:rgba(225,166,103,.14);
+  --good:#57C48A;
+  --good-soft:rgba(87,196,138,.14);
+  --bad:#E2776A;
+  --bad-soft:rgba(226,119,106,.14);
+  --shadow:0 1px 2px rgba(0,0,0,.35), 0 10px 28px -16px rgba(0,0,0,.55);
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.num{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;}
+.page{max-width:1180px;margin:0 auto;padding:28px 24px 64px;}
+
+/* header */
+.masthead{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:22px;}
+.masthead h1{font-size:26px;font-weight:700;margin:0 0 4px;letter-spacing:-.01em;text-wrap:balance;}
+.masthead .sub{color:var(--ink-soft);font-size:14px;margin:0;max-width:52ch;}
+.head-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.year-stepper{display:flex;align-items:center;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:4px;box-shadow:var(--shadow);}
+.year-stepper button{width:26px;height:26px;border:none;background:transparent;color:var(--ink-soft);border-radius:7px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
+.year-stepper button:hover{background:var(--surface-2);color:var(--ink);}
+.year-stepper .year-label{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:14px;padding:0 8px;min-width:52px;text-align:center;}
+.currency-field{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:5px 10px;box-shadow:var(--shadow);}
+.currency-field label{font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em;}
+.currency-field input{width:52px;border:none;background:transparent;color:var(--ink);font-family:"IBM Plex Mono",monospace;font-size:14px;font-weight:600;text-align:center;text-transform:uppercase;}
+.currency-field input:focus{outline:none;}
+.sync-status{font-size:12px;color:var(--ink-faint);display:flex;align-items:center;gap:6px;}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--ink-faint);}
+.sync-status.saving .sync-dot{background:var(--accent-2);}
+.sync-status.saved .sync-dot{background:var(--good);}
+
+/* view tabs */
+.view-tabs{display:flex;gap:4px;background:var(--surface-2);padding:4px;border-radius:11px;width:max-content;margin-bottom:16px;}
+.view-tabs button{border:none;background:transparent;color:var(--ink-soft);font-family:inherit;font-size:13.5px;font-weight:600;padding:8px 16px;border-radius:8px;cursor:pointer;}
+.view-tabs button.active{background:var(--surface);color:var(--ink);box-shadow:var(--shadow);}
+
+.month-pills{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 12px;margin-bottom:6px;}
+.month-pills button{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:8px;cursor:pointer;letter-spacing:.02em;}
+.month-pills button.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.month-pills button.has-data::after{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.55;margin-left:6px;vertical-align:middle;}
+
+/* kpi cards */
+.kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;}
+.kpi-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);}
+.kpi-card .kpi-label{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-faint);font-weight:600;margin-bottom:10px;}
+.kpi-card .kpi-main{font-size:21px;font-weight:600;margin-bottom:6px;}
+.kpi-card .kpi-sub{display:flex;align-items:baseline;justify-content:space-between;font-size:12.5px;color:var(--ink-soft);gap:8px;}
+.kpi-card .kpi-sub .pred{font-family:"IBM Plex Mono",monospace;}
+.kpi-card .kpi-var{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;margin-top:8px;}
+.kpi-var.good{color:var(--good);background:var(--good-soft);}
+.kpi-var.bad{color:var(--bad);background:var(--bad-soft);}
+.kpi-var.flat{color:var(--ink-faint);background:var(--surface-2);}
+
+/* panels */
+.panels{display:grid;grid-template-columns:minmax(280px,1fr) minmax(380px,1.6fr);gap:16px;align-items:start;}
+@media (max-width:760px){.panels{grid-template-columns:1fr;} .kpi-row{grid-template-columns:1fr;}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;}
+.panel-head{padding:14px 18px 12px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;justify-content:space-between;}
+.panel-head h2{font-size:14.5px;margin:0;font-weight:700;}
+.panel-head .hint{font-size:11.5px;color:var(--ink-faint);}
+.col-heads{display:grid;grid-template-columns:1fr 112px 112px 78px;gap:8px;padding:8px 18px;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);font-weight:600;}
+.col-heads span:not(:first-child){text-align:right;}
+.col-heads.with-pct,.row.with-pct,.total-row.with-pct,.cogs-total-row.with-pct{grid-template-columns:1fr 112px 112px 78px 64px;}
+.row{display:grid;grid-template-columns:1fr 112px 112px 78px;gap:8px;align-items:center;padding:8px 18px;border-top:1px solid var(--line);}
+.rpct{text-align:right;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-faint);}
+.row.headline{background:var(--accent-soft);}
+.row.computed{background:var(--surface-2);}
+.row .rlabel{font-size:13px;font-weight:500;}
+.row.headline .rlabel{font-weight:700;}
+.row .rlabel .note{display:block;font-size:10.5px;font-weight:400;color:var(--ink-faint);margin-top:1px;}
+.group-head{padding:10px 18px 4px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent-2);font-weight:700;border-top:1px solid var(--line);background:var(--surface);}
+.num-wrap{position:relative;}
+.num-wrap .sym{position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:9.5px;color:var(--ink-faint);pointer-events:none;letter-spacing:.02em;}
+.row input[type=number]{width:100%;border:1px solid var(--line);background:var(--ground);color:var(--ink);border-radius:7px;padding:6px 8px 6px 32px;font-family:"IBM Plex Mono",monospace;font-size:12px;text-align:right;}
+.row input[type=number]:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent);}
+.row input[type=number]::-webkit-outer-spin-button,.row input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+.row .rvar{text-align:right;font-family:"IBM Plex Mono",monospace;font-size:11.5px;font-weight:600;}
+.row .rvar.good{color:var(--good);}
+.row .rvar.bad{color:var(--bad);}
+.row .rvar.flat{color:var(--ink-faint);}
+.row.computed .rlabel, .row.computed .rvar{color:var(--ink-soft);font-style:italic;font-size:12.5px;}
+.row.computed .cval{font-family:"IBM Plex Mono",monospace;text-align:right;font-size:12px;color:var(--ink-soft);font-style:italic;}
+.cval.ro{font-family:"IBM Plex Mono",monospace;text-align:right;font-size:12px;font-style:normal;color:var(--ink);background:var(--surface-2);border-radius:7px;padding:6px 8px;}
+.cogs-total-row{display:grid;grid-template-columns:1fr 112px 112px 78px;gap:8px;padding:9px 18px;border-top:1px solid var(--line);background:var(--accent-2-soft);font-weight:700;font-size:12.5px;}
+.cogs-total-row .cval,.cogs-total-row .rvar{font-family:"IBM Plex Mono",monospace;text-align:right;font-size:12px;}
+.cogs-total-row .rvar.good{color:var(--good);}
+.cogs-total-row .rvar.bad{color:var(--bad);}
+.total-row{display:grid;grid-template-columns:1fr 112px 112px 78px;gap:8px;padding:11px 18px;border-top:1.5px solid var(--ink);font-weight:700;font-size:13px;}
+.total-row .cval{font-family:"IBM Plex Mono",monospace;text-align:right;font-size:12.5px;}
+.total-row .rvar{text-align:right;font-family:"IBM Plex Mono",monospace;font-size:12.5px;}
+.total-row .rvar.good{color:var(--good);}
+.total-row .rvar.bad{color:var(--bad);}
+
+/* year overview */
+.overview-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px;}
+@media (max-width:760px){.overview-kpis{grid-template-columns:1fr;}}
+.chart-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:18px 18px 8px;margin-bottom:18px;}
+.chart-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:6px;}
+.chart-head h2{font-size:14.5px;margin:0;font-weight:700;}
+.metric-toggle{display:flex;gap:4px;background:var(--surface-2);padding:3px;border-radius:9px;}
+.metric-toggle button{border:none;background:transparent;font-family:inherit;font-size:12px;font-weight:600;color:var(--ink-soft);padding:5px 11px;border-radius:6px;cursor:pointer;}
+.metric-toggle button.active{background:var(--surface);color:var(--ink);box-shadow:var(--shadow);}
+.chart-legend{display:flex;gap:18px;font-size:12px;color:var(--ink-soft);margin:4px 0 4px 4px;}
+.chart-legend span{display:inline-flex;align-items:center;gap:6px;}
+.swatch{width:16px;height:0;border-top:2.5px solid;display:inline-block;}
+.swatch.dash{border-top-style:dashed;}
+svg.chart{width:100%;height:auto;display:block;}
+svg.chart text{fill:var(--ink-faint);font-family:"IBM Plex Mono",monospace;}
+.table-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);}
+table.year-table{border-collapse:collapse;width:100%;min-width:680px;font-size:12.5px;}
+table.year-table th{position:sticky;top:0;background:var(--surface-2);text-align:right;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-faint);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line);}
+table.year-table th:first-child{text-align:left;}
+table.year-table td{text-align:right;padding:8px 12px;font-family:"IBM Plex Mono",monospace;border-bottom:1px solid var(--line);}
+table.year-table td:first-child{text-align:left;font-family:"IBM Plex Sans",sans-serif;font-weight:600;}
+table.year-table tr.current td{background:var(--accent-soft);}
+table.year-table td.good{color:var(--good);}
+table.year-table td.bad{color:var(--bad);}
+tfoot td{font-weight:700;border-top:1.5px solid var(--ink);border-bottom:none;}
+
+.day-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:18px;}
+@media (max-width:760px){.day-stats{grid-template-columns:repeat(2,1fr);}}
+.stat-tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);}
+.stat-tile .kpi-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);font-weight:600;margin-bottom:8px;}
+.stat-tile .kpi-main{font-size:19px;font-weight:600;}
+.stat-tile .stat-sub{font-size:11.5px;color:var(--ink-faint);margin-top:4px;}
+table.day-table{border-collapse:collapse;width:100%;min-width:640px;font-size:12.5px;}
+table.day-table th{position:sticky;top:0;background:var(--surface-2);text-align:right;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-faint);font-weight:600;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;}
+table.day-table th:first-child{text-align:left;}
+table.day-table td{text-align:right;padding:5px 10px;border-bottom:1px solid var(--line);vertical-align:middle;}
+table.day-table td:first-child{text-align:left;font-family:"IBM Plex Mono",monospace;color:var(--ink-soft);font-size:12px;white-space:nowrap;}
+table.day-table td.oth,table.day-table td.predcell{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-faint);font-style:italic;}
+table.day-table tr.today td:first-child{color:var(--accent);font-weight:700;}
+table.day-table input[type=number]{width:100%;min-width:88px;border:1px solid var(--line);background:var(--ground);color:var(--ink);border-radius:6px;padding:5px 7px;font-family:"IBM Plex Mono",monospace;font-size:12px;text-align:right;}
+table.day-table input[type=number]:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent);}
+table.day-table input[type=number]::-webkit-outer-spin-button,table.day-table input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+table.day-table tfoot td{font-weight:700;border-top:1.5px solid var(--ink);border-bottom:none;font-family:"IBM Plex Mono",monospace;background:var(--surface-2);}
+table.day-table tfoot td:first-child{font-family:"IBM Plex Sans",sans-serif;}
+table.day-table tbody tr.selected td{background:var(--accent-soft);}
+table.day-table tbody tr[data-jump]{cursor:pointer;}
+
+.day-mode-toggle{margin-bottom:14px;}
+.drow{display:grid;grid-template-columns:1fr 140px;gap:8px;align-items:center;padding:8px 18px;border-top:1px solid var(--line);}
+.drow .rlabel{font-size:13px;font-weight:500;}
+.drow input[type=number]{width:100%;border:1px solid var(--line);background:var(--ground);color:var(--ink);border-radius:7px;padding:6px 8px 6px 32px;font-family:"IBM Plex Mono",monospace;font-size:12px;text-align:right;}
+.drow input[type=number]:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent);}
+.drow input[type=number]::-webkit-outer-spin-button,.drow input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+.dsubtotal-row{display:grid;grid-template-columns:1fr 140px;gap:8px;padding:8px 18px;border-top:1px solid var(--line);background:var(--surface-2);font-style:italic;font-size:12.5px;color:var(--ink-soft);}
+.dsubtotal-row .cval{font-family:"IBM Plex Mono",monospace;text-align:right;}
+.dcogs-total-row{display:grid;grid-template-columns:1fr 140px;gap:8px;padding:9px 18px;border-top:1px solid var(--line);background:var(--accent-2-soft);font-weight:700;font-size:12.5px;}
+.dcogs-total-row .cval{font-family:"IBM Plex Mono",monospace;text-align:right;font-size:12px;}
+.dtotal-row{display:grid;grid-template-columns:1fr 140px;gap:8px;padding:11px 18px;border-top:1.5px solid var(--ink);font-weight:700;font-size:13px;}
+.dtotal-row .cval{font-family:"IBM Plex Mono",monospace;text-align:right;font-size:12.5px;}
+
+.footnote{font-size:11.5px;color:var(--ink-faint);margin-top:10px;padding:0 4px;}
+.offline-banner{background:var(--accent-2-soft);color:var(--accent-2);border-radius:10px;padding:8px 14px;font-size:12.5px;margin-bottom:16px;display:none;}
+.offline-banner.show{display:block;}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="masthead">
+    <div>
+      <h1>MedConsult Budget Forecast</h1>
+      <p class="sub">Actual vs. predicted income and expenses by month &mdash; clinic revenue streams, staffing, COGS and operating costs in one view.</p>
+    </div>
+    <div class="head-controls">
+      <div class="currency-field">
+        <label for="currencyInput">Currency</label>
+        <input id="currencyInput" maxlength="4" value="THB">
+      </div>
+      <div class="year-stepper">
+        <button id="yearPrev" aria-label="Previous year">&#8249;</button>
+        <span class="year-label" id="yearLabel">2026</span>
+        <button id="yearNext" aria-label="Next year">&#8250;</button>
+      </div>
+      <div class="sync-status" id="syncStatus"><span class="sync-dot"></span><span id="syncText">Loading&hellip;</span></div>
+    </div>
+  </div>
+
+  <div class="offline-banner" id="offlineBanner">Working in this browser only &mdash; entries are saved on this device/browser and won&rsquo;t appear on other devices or for other viewers of this dashboard.</div>
+
+  <div class="view-tabs">
+    <button data-view="day">Day entry</button>
+    <button data-view="month" class="active">Month entry</button>
+    <button data-view="year">Year overview</button>
+  </div>
+
+  <div id="dayView" style="display:none;">
+    <div class="month-pills" id="dayMonthPills"></div>
+    <div class="metric-toggle day-mode-toggle" id="dayModeToggle">
+      <button data-daymode="income" class="active">Income</button>
+      <button data-daymode="expense">Expense</button>
+    </div>
+
+    <div id="dayIncomeBody">
+      <div class="day-stats" id="dayStats"></div>
+      <div class="table-wrap">
+        <table class="day-table" id="dayTable"></table>
+      </div>
+      <p class="footnote" id="dayFootnote"></p>
+    </div>
+
+    <div id="dayExpenseBody" style="display:none;">
+      <div class="month-pills" id="expDayPills"></div>
+      <div class="panel" id="dayExpensePanel"></div>
+      <div class="table-wrap" style="margin-top:16px;">
+        <table class="day-table" id="dayExpenseTable"></table>
+      </div>
+      <p class="footnote" id="dayExpenseFootnote">Expense items you haven't logged by day stay editable as a single monthly figure on the Month entry tab. Log a day for any item here and that item's monthly Actual becomes the sum of its days instead.</p>
+    </div>
+  </div>
+
+  <div id="monthView">
+    <div class="month-pills" id="monthPills"></div>
+
+    <div class="kpi-row" id="kpiRow"></div>
+
+    <div class="panels">
+      <div class="panel" id="incomePanel"></div>
+      <div class="panel" id="expensePanel"></div>
+    </div>
+    <p class="footnote">Income Actual is totalled from the Day entry tab &mdash; log revenue day by day there and it rolls up here automatically. Predicted stays editable on this tab. Other/Untracked Revenue reconciles Total Revenue against the three tracked streams &mdash; it runs negative if GP, Aesthetic and Weight Loss reporting exceeds the total entered. Cost of Goods Sold (COGS) rolls into Total Expense automatically. Figures accept any amount, including cents.</p>
+  </div>
+
+  <div id="yearView" style="display:none;">
+    <div class="overview-kpis" id="overviewKpis"></div>
+    <div class="chart-card">
+      <div class="chart-head">
+        <h2 id="chartTitle">Net profit &mdash; actual vs. predicted</h2>
+        <div class="metric-toggle" id="metricToggle">
+          <button data-metric="net" class="active">Net</button>
+          <button data-metric="income">Income</button>
+          <button data-metric="expense">Expense</button>
+        </div>
+      </div>
+      <div class="chart-legend">
+        <span><i class="swatch" style="border-color:var(--accent)"></i>Actual</span>
+        <span><i class="swatch dash" style="border-color:var(--accent-2)"></i>Predicted</span>
+      </div>
+      <svg class="chart" id="chartSvg" viewBox="0 0 760 300" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+    <div class="table-wrap">
+      <table class="year-table" id="yearTable"></table>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+var MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+var INCOME_ITEMS = [
+  {key:"totalRevenue", label:"Total Revenue", headline:true},
+  {key:"gpRevenue", label:"GP Revenue"},
+  {key:"aestheticRevenue", label:"Aesthetic Revenue"},
+  {key:"weightLoss", label:"Weight Loss"}
+];
+
+/* Expense line items, grouped. Group order below is also render order. */
+var EXPENSE_ITEMS = [
+  {key:"permStaff", label:"Permanent Staff Salary", group:"Staffing"},
+  {key:"partTimeStaff", label:"Part-Time Staff Salary", group:"Staffing"},
+  {key:"doctorSalary", label:"Doctor Salary", group:"Staffing"},
+  {key:"partTimeDoctor", label:"Part-Time Doctor", group:"Staffing"},
+  {key:"deptIT", label:"IT", group:"Department"},
+  {key:"deptMarketing", label:"Marketing", group:"Department"},
+  {key:"deptCustomerService", label:"Customer Service", group:"Department"},
+  {key:"deptFinance", label:"Finance", group:"Department"},
+  {key:"cogsMedicineInventory", label:"Medicine Inventory (Cost of Medicine)", group:"COGS — Inventory", cogs:true},
+  {key:"cogsAestheticsInventory", label:"Aesthetics Products Inventory", group:"COGS — Inventory", cogs:true},
+  {key:"cogsSupplies", label:"COGS — Supplies/Consumables", group:"COGS — Supplies & Consumables", cogs:true},
+  {key:"cogsMedicineSuppliesAdditional", label:"Medicine Supplies (Additional)", group:"COGS — Supplies & Consumables", cogs:true},
+  {key:"cogsLabService", label:"Cost of Service Provided (Lab/External)", group:"COGS — Lab & Services", cogs:true},
+  {key:"cogsFreight", label:"Freight", group:"COGS — Delivery & Logistics", cogs:true},
+  {key:"cogsShippingWages", label:"Shipping Wages", group:"COGS — Delivery & Logistics", cogs:true},
+  {key:"cogsDoctorOvertime", label:"Doctor Overtime (COGS portion)", group:"COGS — Other Direct Costs", cogs:true},
+  {key:"cogsContractCost", label:"Contract Cost", group:"COGS — Other Direct Costs", cogs:true},
+  {key:"generalExpense", label:"General Expense", group:"Other"},
+  {key:"operationalCost", label:"Operational Cost", group:"Other"}
+];
+
+/* Groups in display order. subtotalId adds a subtotal row right after the
+   group's items; cogsLast adds the grand "Total COGS" row after that group. */
+var EXPENSE_GROUPS = [
+  {name:"Staffing"},
+  {name:"Department", subtotalId:"dept", subtotalLabel:"Departments subtotal"},
+  {name:"COGS — Inventory", subtotalId:"cogsInv", subtotalLabel:"Subtotal — Inventory"},
+  {name:"COGS — Supplies & Consumables", subtotalId:"cogsSup", subtotalLabel:"Subtotal — Supplies & Consumables"},
+  {name:"COGS — Lab & Services"},
+  {name:"COGS — Delivery & Logistics", subtotalId:"cogsDel", subtotalLabel:"Subtotal — Delivery & Logistics"},
+  {name:"COGS — Other Direct Costs", cogsLast:true},
+  {name:"Other"}
+];
+var SUBTOTAL_GROUPS = EXPENSE_GROUPS.filter(function(g){ return g.subtotalId; });
+
+var now = new Date();
+var state = {
+  year: now.getFullYear(),
+  monthIdx: now.getMonth(),
+  dayMonthIdx: now.getMonth(),
+  dayMode: "income",
+  expDay: now.getDate(),
+  view: "month",
+  chartMetric: "net",
+  data: defaultData(),
+  docExists: false,
+  localOnly: false,
+  days: {},
+  daysDocExists: {},
+  expenseDays: {},
+  expenseDaysDocExists: {}
+};
+
+var db = null, docRef = null, unsub = null, unsubDays = null, unsubExpenseDays = null, saveTimer = null, pendingPatch = null;
+var pendingDayPatches = {}, dayScheduleTimer = null;
+var pendingExpenseDayPatches = {}, expenseDayScheduleTimer = null;
+function round2(n){ return Math.round((Number(n)||0)*100)/100; }
+
+function emptyPair(){ return {actual:0, predicted:0}; }
+function emptyMonth(){
+  var income = {}, expense = {};
+  INCOME_ITEMS.forEach(function(it){ income[it.key] = emptyPair(); });
+  EXPENSE_ITEMS.forEach(function(it){ expense[it.key] = emptyPair(); });
+  return {income:income, expense:expense};
+}
+function defaultData(){
+  var d = {currency:"THB"};
+  for(var i=0;i<12;i++){ d["m"+i] = emptyMonth(); }
+  return d;
+}
+
+function fmt(n){
+  n = Number(n)||0;
+  var sign = n<0 ? "-" : "";
+  return sign + state.data.currency + " " + Math.abs(n).toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function fmtCompact(n){
+  n = n||0;
+  var sign = n<0 ? "-" : "";
+  var abs = Math.abs(n);
+  var out;
+  if(abs>=1000000) out = (abs/1000000).toFixed(abs>=10000000?0:1)+"M";
+  else if(abs>=1000) out = (abs/1000).toFixed(abs>=10000?0:1)+"k";
+  else out = abs.toFixed(0);
+  return sign + state.data.currency + " " + out;
+}
+function pct(actual, predicted){
+  if(predicted === 0) return actual === 0 ? 0 : 100;
+  return ((actual-predicted)/Math.abs(predicted))*100;
+}
+function varClass(diff, goodIfPositive){
+  if(Math.abs(diff) < 0.005) return "flat";
+  var positive = diff > 0;
+  return (positive === goodIfPositive) ? "good" : "bad";
+}
+function fmtSigned(n){
+  n = Number(n)||0;
+  var s = n>0.004 ? "+" : (n<-0.004 ? "-" : "");
+  return s + state.data.currency + " " + Math.abs(n).toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function sumItems(m, filterFn){
+  var a=0,p=0;
+  EXPENSE_ITEMS.forEach(function(it){ if(filterFn(it)){ a += m.expense[it.key].actual; p += m.expense[it.key].predicted; } });
+  return {actual:a, predicted:p};
+}
+function sumExpense(m){ return sumItems(m, function(){ return true; }); }
+function sumGroup(m, group){ return sumItems(m, function(it){ return it.group===group; }); }
+function sumCOGS(m){ return sumItems(m, function(it){ return !!it.cogs; }); }
+function incomeTotal(m){ return m.income.totalRevenue; }
+function otherRevenue(m){
+  var t = m.income.totalRevenue, g = m.income.gpRevenue, ae = m.income.aestheticRevenue, wl = m.income.weightLoss;
+  return {
+    actual: t.actual - (g.actual+ae.actual+wl.actual),
+    predicted: t.predicted - (g.predicted+ae.predicted+wl.predicted)
+  };
+}
+function netTotal(m){
+  var inc = incomeTotal(m), exp = sumExpense(m);
+  return {actual: inc.actual-exp.actual, predicted: inc.predicted-exp.predicted};
+}
+/* ---------- daily income: roll trailing day entries up into each month's Actual/Predicted ---------- */
+/* Day entry tracks Total Revenue only (no GP/Aesthetic/Weight Loss breakdown) plus a daily
+   Predicted target. GP/Aesthetic/Weight Loss stay directly editable on the Month entry tab. */
+function daysInMonth(year, monthIdx){ return new Date(year, monthIdx+1, 0).getDate(); }
+function monthDaySums(monthKey){
+  var sums = {actual:0};
+  var rec = state.days[monthKey];
+  var actualCount = 0;
+  if(rec){
+    Object.keys(rec).forEach(function(dayNum){
+      var r = rec[dayNum] || {};
+      if(Object.prototype.hasOwnProperty.call(r, "totalRevenue")){ actualCount++; sums.actual += Number(r.totalRevenue)||0; }
+    });
+  }
+  return {sums:sums, actualCount:actualCount};
+}
+/* ---------- daily predicted: split the month's MA-predicted total by historical day-of-week share ----------
+   This is a computed display value, never stored — it always derives live from (a) the month's Predicted
+   figure on the Month entry tab and (b) each weekday's historical share of logged daily actuals. That keeps
+   a single source of truth for the prediction (the MA model) instead of a second, disconnected daily one. */
+function computeWeekdayFactors(){
+  var sums = [0,0,0,0,0,0,0], counts = [0,0,0,0,0,0,0], totalSampled = 0;
+  for(var i=0;i<12;i++){
+    var rec = state.days["m"+i];
+    if(!rec) continue;
+    Object.keys(rec).forEach(function(dayStr){
+      var r = rec[dayStr] || {};
+      if(!Object.prototype.hasOwnProperty.call(r, "totalRevenue")) return;
+      var wd = new Date(state.year, i, parseInt(dayStr,10)).getDay();
+      sums[wd] += Number(r.totalRevenue)||0;
+      counts[wd]++;
+      totalSampled++;
+    });
+  }
+  if(totalSampled < 21) return null; /* fewer than ~3 sampled weeks — too thin to trust a weekday pattern */
+  var avg = sums.map(function(s,idx){ return counts[idx]>0 ? s/counts[idx] : null; });
+  var known = avg.filter(function(v){ return v!==null; });
+  if(!known.length) return null;
+  var fallbackAvg = known.reduce(function(a,b){ return a+b; },0)/known.length;
+  var factors = avg.map(function(v){ return v===null ? fallbackAvg : v; });
+  var sumFactors = factors.reduce(function(a,b){ return a+b; },0);
+  return sumFactors>0 ? factors : null;
+}
+function distributeMonthPredicted(monthIdx){
+  var monthKey = "m"+monthIdx;
+  var totalDays = daysInMonth(state.year, monthIdx);
+  var predictedTotal = state.data[monthKey].income.totalRevenue.predicted;
+  var factors = computeWeekdayFactors();
+  var raw = [];
+  for(var d=1; d<=totalDays; d++){
+    raw.push(factors ? factors[new Date(state.year, monthIdx, d).getDay()] : 1);
+  }
+  var sumRaw = raw.reduce(function(a,b){ return a+b; },0) || 1;
+  return {values: raw.map(function(r){ return predictedTotal*(r/sumRaw); }), weighted: !!factors};
+}
+/* ---------- daily expense: same idea, per line item independently ---------- */
+function itemHasDayExpense(monthKey, key){
+  var rec = state.expenseDays[monthKey];
+  if(!rec) return false;
+  return Object.keys(rec).some(function(d){ return Object.prototype.hasOwnProperty.call(rec[d]||{}, key); });
+}
+function monthExpenseDaySums(monthKey){
+  var sums = {}, itemDayCount = {};
+  EXPENSE_ITEMS.forEach(function(it){ sums[it.key] = 0; itemDayCount[it.key] = 0; });
+  var rec = state.expenseDays[monthKey];
+  var daysLogged = 0;
+  if(rec){
+    Object.keys(rec).forEach(function(d){
+      var r = rec[d] || {};
+      var touched = false;
+      EXPENSE_ITEMS.forEach(function(it){
+        if(Object.prototype.hasOwnProperty.call(r, it.key)){
+          sums[it.key] += Number(r[it.key])||0;
+          itemDayCount[it.key]++;
+          touched = true;
+        }
+      });
+      if(touched) daysLogged++;
+    });
+  }
+  return {sums:sums, itemDayCount:itemDayCount, daysLogged:daysLogged};
+}
+function dayExpenseTotal(rec){
+  if(!rec) return 0;
+  var t = 0;
+  EXPENSE_ITEMS.forEach(function(it){ t += Number(rec[it.key])||0; });
+  return t;
+}
+function applyDailyRollups(){
+  for(var i=0;i<12;i++){
+    var monthKey = "m"+i;
+    var incRes = monthDaySums(monthKey);
+    if(incRes.actualCount>0) state.data[monthKey].income.totalRevenue.actual = round2(incRes.sums.actual);
+
+    var expRes = monthExpenseDaySums(monthKey);
+    EXPENSE_ITEMS.forEach(function(it){
+      if(expRes.itemDayCount[it.key]>0) state.data[monthKey].expense[it.key].actual = round2(expRes.sums[it.key]);
+    });
+  }
+}
+function monthHasData(m){
+  var hit = false;
+  INCOME_ITEMS.forEach(function(it){ if(m.income[it.key].actual || m.income[it.key].predicted) hit = true; });
+  EXPENSE_ITEMS.forEach(function(it){ if(m.expense[it.key].actual || m.expense[it.key].predicted) hit = true; });
+  return hit;
+}
+
+/* ---------- small DOM helpers for fast, no-rebuild updates ---------- */
+function setText(id, text){ var el = document.getElementById(id); if(el) el.textContent = text; }
+function setVarEl(id, diff, goodIfPositive){
+  var el = document.getElementById(id);
+  if(!el) return;
+  el.textContent = fmtSigned(diff);
+  el.className = "rvar " + varClass(diff, goodIfPositive);
+}
+function setComputedPair(idPrefix, pair, goodIfPositive){
+  setText(idPrefix+"_actual", fmt(pair.actual));
+  setText(idPrefix+"_predicted", fmt(pair.predicted));
+  setVarEl(idPrefix+"_var", pair.actual-pair.predicted, goodIfPositive);
+}
+function setKpi(prefix, pair, goodIfPositive){
+  var diff = pair.actual-pair.predicted;
+  setText(prefix+"_main", fmt(pair.actual));
+  setText(prefix+"_pred", fmt(pair.predicted));
+  var el = document.getElementById(prefix+"_var");
+  if(el){
+    var cls = varClass(diff, goodIfPositive);
+    var arrow = diff>0.005 ? "↑" : (diff<-0.005 ? "↓" : "•");
+    el.textContent = arrow + " " + fmtSigned(diff) + " (" + pct(pair.actual,pair.predicted).toFixed(0) + "%)";
+    el.className = "kpi-var " + cls;
+  }
+}
+
+function updateIncomeActualsDisplay(){
+  var m = state.data["m"+state.monthIdx];
+  INCOME_ITEMS.forEach(function(it){
+    var pair = m.income[it.key];
+    setText("a_income_"+it.key, fmt(pair.actual));
+    setVarEl("v_income_"+it.key, pair.actual-pair.predicted, true);
+  });
+}
+
+/* ---------- rendering: month pills ---------- */
+function renderMonthPills(){
+  var el = document.getElementById("monthPills");
+  el.innerHTML = MONTHS_SHORT.map(function(name, i){
+    var m = state.data["m"+i];
+    var cls = "";
+    if(i===state.monthIdx) cls += " active";
+    if(monthHasData(m)) cls += " has-data";
+    return '<button data-month="'+i+'" class="'+cls.trim()+'">'+name+'</button>';
+  }).join("");
+}
+
+/* ---------- rendering: kpi row ---------- */
+function kpiCard(idPrefix, label, pair, goodIfPositive){
+  var diff = pair.actual-pair.predicted;
+  var cls = varClass(diff, goodIfPositive);
+  var arrow = diff>0.005 ? "&#8593;" : (diff<-0.005 ? "&#8595;" : "&#8226;");
+  return '<div class="kpi-card">'+
+    '<div class="kpi-label">'+label+'</div>'+
+    '<div class="kpi-main num" id="'+idPrefix+'_main">'+fmt(pair.actual)+'</div>'+
+    '<div class="kpi-sub"><span>vs. predicted</span><span class="pred" id="'+idPrefix+'_pred">'+fmt(pair.predicted)+'</span></div>'+
+    '<div class="kpi-var '+cls+'" id="'+idPrefix+'_var">'+arrow+' '+fmtSigned(diff)+' ('+(pct(pair.actual,pair.predicted)).toFixed(0)+'%)</div>'+
+  '</div>';
+}
+function renderKpiRow(){
+  var m = state.data["m"+state.monthIdx];
+  var inc = incomeTotal(m), exp = sumExpense(m), net = netTotal(m);
+  var el = document.getElementById("kpiRow");
+  el.innerHTML = kpiCard("kpiIncome", "Income (Total Revenue)", inc, true) +
+                 kpiCard("kpiExpense", "Total Expense", exp, false) +
+                 kpiCard("kpiNet", "Net Profit / Loss", net, true);
+}
+function updateKpiRow(){
+  var m = state.data["m"+state.monthIdx];
+  setKpi("kpiIncome", incomeTotal(m), true);
+  setKpi("kpiExpense", sumExpense(m), false);
+  setKpi("kpiNet", netTotal(m), true);
+}
+
+/* ---------- rendering: income panel ---------- */
+function renderIncomePanel(){
+  var m = state.data["m"+state.monthIdx];
+  var dayRes = monthDaySums("m"+state.monthIdx);
+  var html = '<div class="panel-head"><h2>Income</h2><span class="hint">'+MONTHS[state.monthIdx]+' '+state.year+'</span></div>';
+  html += '<div class="col-heads"><span>Line</span><span>Actual</span><span>Predicted</span><span>&Delta;</span></div>';
+  INCOME_ITEMS.forEach(function(it){
+    if(it.key==="totalRevenue") html += totalRevenueRow(it, m.income[it.key], dayRes);
+    else html += incomeRow(it, m.income[it.key]);
+  });
+  html += computedRow("Other / Untracked Revenue<span class=\"note\">Total &minus; (GP + Aesthetic + Weight Loss)</span>", "oth", otherRevenue(m), true, "row computed");
+  document.getElementById("incomePanel").innerHTML = html;
+}
+function totalRevenueRow(it, pair, dayRes){
+  var diff = pair.actual - pair.predicted;
+  var ccy = state.data.currency;
+  var actualCell = '<div class="cval ro" id="a_income_'+it.key+'" title="Totalled from Day entry">'+fmt(pair.actual)+'</div>';
+  var predictedCell = '<div class="num-wrap"><span class="sym">'+ccy+'</span><input type="number" step="any" id="f_income_'+it.key+'_predicted" data-section="income" data-key="'+it.key+'" data-mode="predicted" value="'+pair.predicted+'"></div>';
+  var hint = dayRes.actualCount>0 ? "From Day entry ("+dayRes.actualCount+" days logged)" : "Log days on the Day entry tab, or edit actual here";
+  return '<div class="row headline">'+
+    '<div class="rlabel">'+it.label+'<span class="note">'+hint+'</span></div>'+
+    actualCell + predictedCell +
+    '<div class="rvar '+varClass(diff, true)+'" id="v_income_'+it.key+'">'+fmtSigned(diff)+'</div>'+
+  '</div>';
+}
+function incomeRow(it, pair){
+  var diff = pair.actual - pair.predicted;
+  var ccy = state.data.currency;
+  return '<div class="row">'+
+    '<div class="rlabel">'+it.label+'</div>'+
+    '<div class="num-wrap"><span class="sym">'+ccy+'</span><input type="number" step="any" id="f_income_'+it.key+'_actual" data-section="income" data-key="'+it.key+'" data-mode="actual" value="'+pair.actual+'"></div>'+
+    '<div class="num-wrap"><span class="sym">'+ccy+'</span><input type="number" step="any" id="f_income_'+it.key+'_predicted" data-section="income" data-key="'+it.key+'" data-mode="predicted" value="'+pair.predicted+'"></div>'+
+    '<div class="rvar '+varClass(diff, true)+'" id="v_income_'+it.key+'">'+fmtSigned(diff)+'</div>'+
+  '</div>';
+}
+
+/* ---------- rendering: expense panel ---------- */
+function computedRow(label, idPrefix, pair, goodIfPositive, rowClass){
+  return '<div class="'+rowClass+'"><div class="rlabel">'+label+'</div>'+
+    '<div class="cval" id="'+idPrefix+'_actual">'+fmt(pair.actual)+'</div>'+
+    '<div class="cval" id="'+idPrefix+'_predicted">'+fmt(pair.predicted)+'</div>'+
+    '<div class="rvar '+varClass(pair.actual-pair.predicted, goodIfPositive)+'" id="'+idPrefix+'_var">'+fmtSigned(pair.actual-pair.predicted)+'</div></div>';
+}
+function renderExpensePanel(){
+  var m = state.data["m"+state.monthIdx];
+  var monthKey = "m"+state.monthIdx;
+  var html = '<div class="panel-head"><h2>Expenses</h2><span class="hint">'+MONTHS[state.monthIdx]+' '+state.year+'</span></div>';
+  html += '<div class="col-heads"><span>Line</span><span>Actual</span><span>Predicted</span><span>&Delta;</span></div>';
+  EXPENSE_GROUPS.forEach(function(g){
+    var items = EXPENSE_ITEMS.filter(function(it){ return it.group===g.name; });
+    if(!items.length) return;
+    html += '<div class="group-head">'+g.name+'</div>';
+    items.forEach(function(it){ html += expenseRow(it, m.expense[it.key], monthKey); });
+    if(g.subtotalId){
+      html += computedRow(g.subtotalLabel, g.subtotalId, sumGroup(m, g.name), false, "row computed");
+    }
+    if(g.cogsLast){
+      html += computedRow("Total COGS", "cogsTotal", sumCOGS(m), false, "cogs-total-row");
+    }
+  });
+  html += computedRow("Total Expense", "expTotal", sumExpense(m), false, "total-row");
+  document.getElementById("expensePanel").innerHTML = html;
+}
+function expenseRow(it, pair, monthKey){
+  var diff = pair.actual - pair.predicted;
+  var ccy = state.data.currency;
+  var readOnly = itemHasDayExpense(monthKey, it.key);
+  var actualCell = readOnly
+    ? '<div class="cval ro" id="a_expense_'+it.key+'" title="Totalled from Day entry">'+fmt(pair.actual)+'</div>'
+    : '<div class="num-wrap"><span class="sym">'+ccy+'</span><input type="number" step="any" id="f_expense_'+it.key+'_actual" data-section="expense" data-key="'+it.key+'" data-mode="actual" value="'+pair.actual+'"></div>';
+  return '<div class="row">'+
+    '<div class="rlabel">'+it.label+(readOnly?'<span class="note">From Day entry</span>':'')+'</div>'+
+    actualCell +
+    '<div class="num-wrap"><span class="sym">'+ccy+'</span><input type="number" step="any" id="f_expense_'+it.key+'_predicted" data-section="expense" data-key="'+it.key+'" data-mode="predicted" value="'+pair.predicted+'"></div>'+
+    '<div class="rvar '+varClass(diff, false)+'" id="v_expense_'+it.key+'">'+fmtSigned(diff)+'</div>'+
+  '</div>';
+}
+
+function renderMonthView(){
+  renderMonthPills();
+  renderKpiRow();
+  renderIncomePanel();
+  renderExpensePanel();
+}
+
+/* ---------- rendering: day entry ---------- */
+function renderDayMonthPills(){
+  var el = document.getElementById("dayMonthPills");
+  el.innerHTML = MONTHS_SHORT.map(function(name, i){
+    var incRes = monthDaySums("m"+i);
+    var expRes = monthExpenseDaySums("m"+i);
+    var hasData = state.dayMode==="expense" ? expRes.daysLogged>0 : incRes.actualCount>0;
+    var cls = "";
+    if(i===state.dayMonthIdx) cls += " active";
+    if(hasData) cls += " has-data";
+    return '<button data-daymonth="'+i+'" class="'+cls.trim()+'">'+name+'</button>';
+  }).join("");
+}
+function statTile(label, value, sub){
+  return '<div class="stat-tile"><div class="kpi-label">'+label+'</div><div class="kpi-main num">'+fmt(value)+'</div>'+(sub?'<div class="stat-sub">'+sub+'</div>':'')+'</div>';
+}
+function predictedMTDInfo(monthIdx){
+  var dist = distributeMonthPredicted(monthIdx);
+  var totalDays = daysInMonth(state.year, monthIdx);
+  var isCurrentMonth = (state.year===now.getFullYear() && monthIdx===now.getMonth());
+  var uptoDay = isCurrentMonth ? Math.min(now.getDate(), totalDays) : totalDays;
+  var sumToDate = 0;
+  for(var i=0;i<uptoDay;i++) sumToDate += dist.values[i];
+  return {values:dist.values, weighted:dist.weighted, sumToDate:sumToDate, uptoDay:uptoDay, isCurrentMonth:isCurrentMonth, totalDays:totalDays};
+}
+function renderDayStats(){
+  var monthKey = "m"+state.dayMonthIdx;
+  var res = monthDaySums(monthKey);
+  var totalDays = daysInMonth(state.year, state.dayMonthIdx);
+  var pred = predictedMTDInfo(state.dayMonthIdx);
+  var el = document.getElementById("dayStats");
+  var predLabel = pred.isCurrentMonth ? "Total Revenue (predicted, through today)" : "Total Revenue (predicted, full month)";
+  var predSub = pred.weighted ? "Weighted by day-of-week pattern" : "Flat split — building day-of-week history";
+  el.innerHTML =
+    statTile("Total Revenue (MTD, actual)", res.sums.actual, res.actualCount+" of "+totalDays+" days logged") +
+    statTile(predLabel, pred.sumToDate, predSub);
+}
+function renderDayTable(){
+  var monthKey = "m"+state.dayMonthIdx;
+  var recAll = state.days[monthKey] || {};
+  var total = daysInMonth(state.year, state.dayMonthIdx);
+  var isCurrentMonth = (state.year===now.getFullYear() && state.dayMonthIdx===now.getMonth());
+  var pred = predictedMTDInfo(state.dayMonthIdx);
+  var rows = "";
+  for(var d=1; d<=total; d++){
+    var rec = recAll[d] || recAll[String(d)] || {};
+    var wk = new Date(state.year, state.dayMonthIdx, d).toLocaleDateString("en-US",{weekday:"short"});
+    var isToday = isCurrentMonth && d===now.getDate();
+    rows += '<tr class="'+(isToday?"today":"")+'">'+
+      '<td>'+wk+' '+d+'</td>'+
+      dayCell(d,"totalRevenue",rec.totalRevenue)+
+      dayPredCell(pred.values[d-1])+
+    '</tr>';
+  }
+  var res = monthDaySums(monthKey);
+  var monthPredictedTotal = state.data[monthKey].income.totalRevenue.predicted;
+  var foot = '<tfoot><tr><td>Month total</td>'+
+    '<td id="dtot_totalRevenue">'+fmt(res.sums.actual)+'</td>'+
+    '<td id="dtot_predicted">'+fmt(monthPredictedTotal)+'</td>'+
+  '</tr></tfoot>';
+  document.getElementById("dayTable").innerHTML =
+    '<thead><tr><th>Day</th><th>Total Revenue</th><th>Predicted</th></tr></thead>'+
+    '<tbody>'+rows+'</tbody>'+foot;
+  document.getElementById("dayFootnote").textContent =
+    "Enter each day's actual revenue here — monthly Actual on the Month entry tab is the sum of these days. Predicted is calculated, not entered: it splits the month's Predicted figure (set on the Month entry tab, e.g. by the moving-average model) across days using each weekday's historical share of logged revenue" +
+    (pred.weighted ? ", based on this year's logged days so far." : " — currently a flat, even split because there isn't yet enough logged daily history (about 3 weeks) to detect a day-of-week pattern.");
+}
+function dayCell(day, key, val){
+  return '<td><input type="number" step="any" id="fd_'+day+'_'+key+'" data-day="'+day+'" data-key="'+key+'" value="'+(Number(val)||0)+'"></td>';
+}
+function dayPredCell(value){
+  return '<td class="predcell">'+fmt(value)+'</td>';
+}
+function updateDayFooter(){
+  var monthKey = "m"+state.dayMonthIdx;
+  var res = monthDaySums(monthKey);
+  setText("dtot_totalRevenue", fmt(res.sums.actual));
+  var tiles = document.querySelectorAll("#dayStats .stat-tile");
+  if(tiles[0]){
+    var m0 = tiles[0].querySelector(".kpi-main"); if(m0) m0.textContent = fmt(res.sums.actual);
+    var s0 = tiles[0].querySelector(".stat-sub"); if(s0) s0.textContent = res.actualCount+" of "+daysInMonth(state.year, state.dayMonthIdx)+" days logged";
+  }
+  var pill = document.querySelector('#dayMonthPills button[data-daymonth="'+state.dayMonthIdx+'"]');
+  if(pill && res.actualCount>0) pill.classList.add("has-data");
+}
+
+/* ---------- rendering: day expense entry ---------- */
+function clampExpDay(){
+  var total = daysInMonth(state.year, state.dayMonthIdx);
+  if(state.expDay > total) state.expDay = total;
+  if(state.expDay < 1) state.expDay = 1;
+}
+function renderExpDayPills(){
+  clampExpDay();
+  var total = daysInMonth(state.year, state.dayMonthIdx);
+  var monthKey = "m"+state.dayMonthIdx;
+  var rec = state.expenseDays[monthKey] || {};
+  var html = "";
+  for(var d=1; d<=total; d++){
+    var dayRec = rec[d] || rec[String(d)];
+    var touched = dayRec && Object.keys(dayRec).length>0;
+    var cls = "";
+    if(d===state.expDay) cls += " active";
+    if(touched) cls += " has-data";
+    html += '<button data-expday="'+d+'" class="'+cls.trim()+'">'+d+'</button>';
+  }
+  document.getElementById("expDayPills").innerHTML = html;
+}
+function expDayRec(){
+  var monthKey = "m"+state.dayMonthIdx;
+  var rec = state.expenseDays[monthKey] || {};
+  return rec[state.expDay] || rec[String(state.expDay)] || {};
+}
+function dRow(it, val){
+  var ccy = state.data.currency;
+  return '<div class="drow">'+
+    '<div class="rlabel">'+it.label+'</div>'+
+    '<div class="num-wrap"><span class="sym">'+ccy+'</span><input type="number" step="any" id="fed_'+it.key+'" data-key="'+it.key+'" value="'+(Number(val)||0)+'"></div>'+
+  '</div>';
+}
+function dComputedRow(label, idPrefix, val, rowClass){
+  return '<div class="'+rowClass+'"><div class="rlabel">'+label+'</div><div class="cval" id="'+idPrefix+'">'+fmt(val)+'</div></div>';
+}
+function expDaySubtotal(rec, group){
+  var t = 0;
+  EXPENSE_ITEMS.forEach(function(it){ if(it.group===group) t += Number(rec[it.key])||0; });
+  return t;
+}
+function expDayCogsTotal(rec){
+  var t = 0;
+  EXPENSE_ITEMS.forEach(function(it){ if(it.cogs) t += Number(rec[it.key])||0; });
+  return t;
+}
+function renderDayExpensePanel(){
+  var rec = expDayRec();
+  var html = '<div class="panel-head"><h2>Expense — Day '+state.expDay+'</h2><span class="hint">'+MONTHS[state.dayMonthIdx]+' '+state.year+'</span></div>';
+  EXPENSE_GROUPS.forEach(function(g){
+    var items = EXPENSE_ITEMS.filter(function(it){ return it.group===g.name; });
+    if(!items.length) return;
+    html += '<div class="group-head">'+g.name+'</div>';
+    items.forEach(function(it){ html += dRow(it, rec[it.key]); });
+    if(g.subtotalId) html += dComputedRow(g.subtotalLabel, "d"+g.subtotalId, expDaySubtotal(rec, g.name), "dsubtotal-row");
+    if(g.cogsLast) html += dComputedRow("Total COGS (this day)", "dCogsTotal", expDayCogsTotal(rec), "dcogs-total-row");
+  });
+  html += dComputedRow("Total Expense (this day)", "dExpTotal", dayExpenseTotal(rec), "dtotal-row");
+  document.getElementById("dayExpensePanel").innerHTML = html;
+}
+function renderDayExpenseTable(){
+  var monthKey = "m"+state.dayMonthIdx;
+  var recAll = state.expenseDays[monthKey] || {};
+  var total = daysInMonth(state.year, state.dayMonthIdx);
+  var isCurrentMonth = (state.year===now.getFullYear() && state.dayMonthIdx===now.getMonth());
+  var rows = "";
+  for(var d=1; d<=total; d++){
+    var rec = recAll[d] || recAll[String(d)] || {};
+    var wk = new Date(state.year, state.dayMonthIdx, d).toLocaleDateString("en-US",{weekday:"short"});
+    var isToday = isCurrentMonth && d===now.getDate();
+    var cls = [];
+    if(isToday) cls.push("today");
+    if(d===state.expDay) cls.push("selected");
+    rows += '<tr class="'+cls.join(" ")+'" data-jump="'+d+'">'+
+      '<td>'+wk+' '+d+'</td>'+
+      '<td>'+fmt(dayExpenseTotal(rec))+'</td>'+
+    '</tr>';
+  }
+  var res = monthExpenseDaySums(monthKey);
+  var monthTotal = 0;
+  EXPENSE_ITEMS.forEach(function(it){ monthTotal += res.sums[it.key]; });
+  var foot = '<tfoot><tr><td>Month total</td><td id="detot_total">'+fmt(monthTotal)+'</td></tr></tfoot>';
+  document.getElementById("dayExpenseTable").innerHTML =
+    '<thead><tr><th>Day</th><th>Total Expense</th></tr></thead>'+
+    '<tbody>'+rows+'</tbody>'+foot;
+}
+function renderDayExpenseView(){
+  renderExpDayPills();
+  renderDayExpensePanel();
+  renderDayExpenseTable();
+}
+function renderDayView(){
+  renderDayMonthPills();
+  if(state.dayMode==="expense") renderDayExpenseView();
+  else { renderDayStats(); renderDayTable(); }
+}
+
+/* ---------- fast, targeted updates while typing (no re-render, no lag, no focus loss) ---------- */
+function updateIncomeComputed(){
+  var m = state.data["m"+state.monthIdx];
+  setComputedPair("oth", otherRevenue(m), true);
+}
+function updateExpenseComputed(){
+  var m = state.data["m"+state.monthIdx];
+  SUBTOTAL_GROUPS.forEach(function(g){ setComputedPair(g.subtotalId, sumGroup(m, g.name), false); });
+  setComputedPair("cogsTotal", sumCOGS(m), false);
+  setComputedPair("expTotal", sumExpense(m), false);
+}
+
+/* ---------- year overview ---------- */
+function yearSeries(metric){
+  var actual = [], predicted = [];
+  for(var i=0;i<12;i++){
+    var m = state.data["m"+i], pair;
+    if(metric==="income") pair = incomeTotal(m);
+    else if(metric==="expense") pair = sumExpense(m);
+    else pair = netTotal(m);
+    actual.push(pair.actual);
+    predicted.push(pair.predicted);
+  }
+  return {actual:actual, predicted:predicted};
+}
+function renderOverviewKpis(){
+  var incA=0,incP=0,expA=0,expP=0;
+  for(var i=0;i<12;i++){
+    var m = state.data["m"+i];
+    var inc = incomeTotal(m), exp = sumExpense(m);
+    incA+=inc.actual; incP+=inc.predicted; expA+=exp.actual; expP+=exp.predicted;
+  }
+  var netA = incA-expA, netP = incP-expP;
+  var el = document.getElementById("overviewKpis");
+  el.innerHTML = kpiCard("annIncome", "Annual Income", {actual:incA,predicted:incP}, true) +
+                 kpiCard("annExpense", "Annual Expense", {actual:expA,predicted:expP}, false) +
+                 kpiCard("annNet", "Annual Net", {actual:netA,predicted:netP}, true);
+}
+var METRIC_LABEL = {net:"Net profit", income:"Income", expense:"Expense"};
+function renderChart(){
+  var s = yearSeries(state.chartMetric);
+  document.getElementById("chartTitle").textContent = METRIC_LABEL[state.chartMetric]+" — actual vs. predicted";
+  var W=760, H=300, padL=70, padR=20, padT=20, padB=32;
+  var plotW = W-padL-padR, plotH = H-padT-padB;
+  var all = s.actual.concat(s.predicted);
+  var dataMin = Math.min.apply(null, all.concat([0]));
+  var dataMax = Math.max.apply(null, all.concat([0]));
+  if(dataMax===dataMin){ dataMax = dataMin+100; if(dataMin===0) dataMin = -100; }
+  var pad = (dataMax-dataMin)*0.12;
+  var domMin = dataMin-pad, domMax = dataMax+pad;
+  function xAt(i){ return padL + (i/11)*plotW; }
+  function yAt(v){ return padT + plotH - ((v-domMin)/(domMax-domMin))*plotH; }
+
+  var svg = "";
+  var ticks = 4;
+  for(var t=0;t<=ticks;t++){
+    var v = domMin + (domMax-domMin)*(t/ticks);
+    var y = yAt(v);
+    svg += '<line x1="'+padL+'" x2="'+(W-padR)+'" y1="'+y.toFixed(1)+'" y2="'+y.toFixed(1)+'" stroke="var(--line)" stroke-width="1"/>';
+    svg += '<text x="'+(padL-8)+'" y="'+(y+3.5).toFixed(1)+'" font-size="10" text-anchor="end">'+fmtCompact(v)+'</text>';
+  }
+  if(domMin<0 && domMax>0){
+    var y0 = yAt(0);
+    svg += '<line x1="'+padL+'" x2="'+(W-padR)+'" y1="'+y0.toFixed(1)+'" y2="'+y0.toFixed(1)+'" stroke="var(--ink-faint)" stroke-width="1.2"/>';
+  }
+  for(var i=0;i<12;i++){
+    svg += '<text x="'+xAt(i).toFixed(1)+'" y="'+(H-8)+'" font-size="10" text-anchor="middle">'+MONTHS_SHORT[i]+'</text>';
+  }
+
+  function pathFor(arr){
+    return arr.map(function(v,i){ return (i===0?"M":"L")+xAt(i).toFixed(1)+","+yAt(v).toFixed(1); }).join(" ");
+  }
+  svg += '<path d="'+pathFor(s.predicted)+'" fill="none" stroke="var(--accent-2)" stroke-width="2" stroke-dasharray="6 5"/>';
+  svg += '<path d="'+pathFor(s.actual)+'" fill="none" stroke="var(--accent)" stroke-width="2.5"/>';
+  s.predicted.forEach(function(v,i){ svg += '<circle cx="'+xAt(i).toFixed(1)+'" cy="'+yAt(v).toFixed(1)+'" r="2.5" fill="var(--accent-2)"/>'; });
+  s.actual.forEach(function(v,i){
+    var r = (i===state.monthIdx) ? 4.5 : 3;
+    svg += '<circle cx="'+xAt(i).toFixed(1)+'" cy="'+yAt(v).toFixed(1)+'" r="'+r+'" fill="var(--accent)"'+(i===state.monthIdx?' stroke="var(--surface)" stroke-width="2"':'')+'/>';
+  });
+  var curV = s.actual[state.monthIdx];
+  svg += '<text x="'+xAt(state.monthIdx).toFixed(1)+'" y="'+(yAt(curV)-10).toFixed(1)+'" font-size="10.5" font-weight="600" text-anchor="middle" fill="var(--ink)">'+fmtCompact(curV)+'</text>';
+
+  document.getElementById("chartSvg").innerHTML = svg;
+}
+function renderYearTable(){
+  var rows = "";
+  for(var i=0;i<12;i++){
+    var m = state.data["m"+i];
+    var inc = incomeTotal(m), exp = sumExpense(m), net = netTotal(m);
+    var netVarCls = varClass(net.actual-net.predicted, true);
+    rows += '<tr class="'+(i===state.monthIdx?"current":"")+'">'+
+      '<td>'+MONTHS_SHORT[i]+'</td>'+
+      '<td>'+fmt(inc.actual)+'</td><td>'+fmt(inc.predicted)+'</td>'+
+      '<td>'+fmt(exp.actual)+'</td><td>'+fmt(exp.predicted)+'</td>'+
+      '<td>'+fmt(net.actual)+'</td><td>'+fmt(net.predicted)+'</td>'+
+      '<td class="'+netVarCls+'">'+fmtSigned(net.actual-net.predicted)+'</td>'+
+    '</tr>';
+  }
+  var incA=0,incP=0,expA=0,expP=0,netA=0,netP=0;
+  for(var j=0;j<12;j++){
+    var mm = state.data["m"+j];
+    var i2=incomeTotal(mm), e2=sumExpense(mm), n2=netTotal(mm);
+    incA+=i2.actual; incP+=i2.predicted; expA+=e2.actual; expP+=e2.predicted; netA+=n2.actual; netP+=n2.predicted;
+  }
+  var foot = '<tfoot><tr><td>Full year</td><td>'+fmt(incA)+'</td><td>'+fmt(incP)+'</td><td>'+fmt(expA)+'</td><td>'+fmt(expP)+'</td><td>'+fmt(netA)+'</td><td>'+fmt(netP)+'</td><td class="'+varClass(netA-netP,true)+'">'+fmtSigned(netA-netP)+'</td></tr></tfoot>';
+  document.getElementById("yearTable").innerHTML =
+    '<thead><tr><th>Month</th><th>Income Act.</th><th>Income Pred.</th><th>Expense Act.</th><th>Expense Pred.</th><th>Net Act.</th><th>Net Pred.</th><th>Net &Delta;</th></tr></thead>'+
+    '<tbody>'+rows+'</tbody>'+foot;
+}
+function renderYearView(){
+  renderOverviewKpis();
+  renderChart();
+  renderYearTable();
+}
+
+function renderAll(){
+  document.getElementById("yearLabel").textContent = state.year;
+  document.getElementById("currencyInput").value = state.data.currency;
+  if(state.view==="day") renderDayView();
+  else if(state.view==="month") renderMonthView();
+  else renderYearView();
+}
+
+/* ---------- persistence ---------- */
+function docPath(){ return "budget/year-"+state.year; }
+
+function subscribeYear(){
+  if(unsub){ unsub(); unsub = null; }
+  if(unsubDays){ unsubDays(); unsubDays = null; }
+  if(unsubExpenseDays){ unsubExpenseDays(); unsubExpenseDays = null; }
+  state.data = defaultData();
+  state.docExists = false;
+  state.days = {};
+  state.daysDocExists = {};
+  state.expenseDays = {};
+  state.expenseDaysDocExists = {};
+  setSyncStatus("loading", "Loading…");
+  if(!db){
+    state.localOnly = true;
+    document.getElementById("offlineBanner").classList.add("show");
+    loadLocal();
+    loadLocalDays();
+    loadLocalExpenseDays();
+    applyDailyRollups();
+    setSyncStatus("saved", "Saved to this browser");
+    renderAll();
+    return;
+  }
+  docRef = db.doc(docPath());
+  unsub = docRef.onSnapshot(function(snap){
+    if(snap.exists){
+      var d = snap.data();
+      state.data = mergeWithDefaults(d);
+      state.docExists = true;
+    } else {
+      state.data = defaultData();
+      state.docExists = false;
+    }
+    applyDailyRollups();
+    if(!snap.metadata.hasPendingWrites) setSyncStatus("saved", "Synced");
+    renderAll();
+  }, function(err){
+    console.warn("db error", err);
+    state.localOnly = true;
+    document.getElementById("offlineBanner").classList.add("show");
+    loadLocal();
+    loadLocalDays();
+    loadLocalExpenseDays();
+    applyDailyRollups();
+    setSyncStatus("saved", "Saved to this browser");
+    renderAll();
+  });
+  var daysCol = docRef.collection("dailyIncome");
+  unsubDays = daysCol.onSnapshot(function(qsnap){
+    var days = {}, exists = {};
+    qsnap.docs.forEach(function(dsnap){ days[dsnap.id] = dsnap.data(); exists[dsnap.id] = true; });
+    state.days = days;
+    state.daysDocExists = exists;
+    applyDailyRollups();
+    renderAll();
+  }, function(err){ console.warn("daily income sync error", err); });
+  var expenseDaysCol = docRef.collection("dailyExpense");
+  unsubExpenseDays = expenseDaysCol.onSnapshot(function(qsnap){
+    var days = {}, exists = {};
+    qsnap.docs.forEach(function(dsnap){ days[dsnap.id] = dsnap.data(); exists[dsnap.id] = true; });
+    state.expenseDays = days;
+    state.expenseDaysDocExists = exists;
+    applyDailyRollups();
+    renderAll();
+  }, function(err){ console.warn("daily expense sync error", err); });
+}
+function mergeWithDefaults(d){
+  var out = defaultData();
+  if(d.currency) out.currency = d.currency;
+  for(var i=0;i<12;i++){
+    var key = "m"+i;
+    if(d[key]){
+      INCOME_ITEMS.forEach(function(it){
+        if(d[key].income && d[key].income[it.key]){
+          out[key].income[it.key].actual = Number(d[key].income[it.key].actual)||0;
+          out[key].income[it.key].predicted = Number(d[key].income[it.key].predicted)||0;
+        }
+      });
+      EXPENSE_ITEMS.forEach(function(it){
+        if(d[key].expense && d[key].expense[it.key]){
+          out[key].expense[it.key].actual = Number(d[key].expense[it.key].actual)||0;
+          out[key].expense[it.key].predicted = Number(d[key].expense[it.key].predicted)||0;
+        }
+      });
+    }
+  }
+  return out;
+}
+function localKey(){ return "medconsult-forecast-"+state.year; }
+function loadLocal(){
+  try{
+    var raw = localStorage.getItem(localKey());
+    if(raw) state.data = mergeWithDefaults(JSON.parse(raw));
+  }catch(e){ /* ignore, keep defaults */ }
+}
+function saveLocal(){
+  try{ localStorage.setItem(localKey(), JSON.stringify(state.data)); }catch(e){ /* ignore */ }
+}
+function localDaysKey(){ return "medconsult-forecast-days-"+state.year; }
+function loadLocalDays(){
+  try{
+    var raw = localStorage.getItem(localDaysKey());
+    if(raw) state.days = JSON.parse(raw);
+  }catch(e){ /* ignore */ }
+}
+function saveLocalDays(){
+  try{ localStorage.setItem(localDaysKey(), JSON.stringify(state.days)); }catch(e){ /* ignore */ }
+}
+function localExpenseDaysKey(){ return "medconsult-forecast-expense-days-"+state.year; }
+function loadLocalExpenseDays(){
+  try{
+    var raw = localStorage.getItem(localExpenseDaysKey());
+    if(raw) state.expenseDays = JSON.parse(raw);
+  }catch(e){ /* ignore */ }
+}
+function saveLocalExpenseDays(){
+  try{ localStorage.setItem(localExpenseDaysKey(), JSON.stringify(state.expenseDays)); }catch(e){ /* ignore */ }
+}
+
+function setSyncStatus(kind, text){
+  var el = document.getElementById("syncStatus");
+  el.className = "sync-status "+(kind==="saving"?"saving":(kind==="saved"?"saved":""));
+  document.getElementById("syncText").textContent = text;
+}
+
+function scheduleSave(patch){
+  pendingPatch = deepMerge(pendingPatch||{}, patch);
+  setSyncStatus("saving", "Saving…");
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flushSave, 500);
+}
+function deepMerge(a,b){
+  for(var k in b){
+    if(b[k] && typeof b[k]==="object" && !Array.isArray(b[k])){
+      a[k] = deepMerge(a[k]&&typeof a[k]==="object"?a[k]:{}, b[k]);
+    } else { a[k] = b[k]; }
+  }
+  return a;
+}
+function flushSave(){
+  var patch = pendingPatch;
+  pendingPatch = null;
+  if(!patch) return;
+  if(!db || state.localOnly){
+    saveLocal();
+    setSyncStatus("saved", state.localOnly ? "Saved to this browser" : "Ready");
+    return;
+  }
+  var op = state.docExists ? docRef.update(patch) : docRef.set(deepMerge(JSON.parse(JSON.stringify(state.data)), patch));
+  if(!state.docExists) state.docExists = true;
+  op.then(function(){
+    setSyncStatus("saved", "Synced");
+  }).catch(function(err){
+    console.warn("save failed", err);
+    if(err && err.code === "invalid_argument" && !state.docExists){
+      docRef.update(patch).then(function(){ setSyncStatus("saved","Synced"); }).catch(function(){ setSyncStatus("saved","Save failed — retry by editing again"); });
+    } else {
+      setSyncStatus("saved", "Save failed — retry by editing again");
+    }
+  });
+}
+
+/* ---------- day save (per-month dailyIncome doc) ---------- */
+function scheduleDaySave(monthKey, patch){
+  pendingDayPatches[monthKey] = deepMerge(pendingDayPatches[monthKey]||{}, patch);
+  setSyncStatus("saving", "Saving…");
+  clearTimeout(dayScheduleTimer);
+  dayScheduleTimer = setTimeout(flushDaySave, 500);
+}
+function flushDaySave(){
+  var patches = pendingDayPatches;
+  pendingDayPatches = {};
+  var monthKeys = Object.keys(patches);
+  if(!monthKeys.length) return;
+  if(!db || state.localOnly){
+    saveLocalDays();
+    setSyncStatus("saved", state.localOnly ? "Saved to this browser" : "Ready");
+    return;
+  }
+  var ops = monthKeys.map(function(monthKey){
+    var ref = docRef.collection("dailyIncome").doc(monthKey);
+    var exists = !!state.daysDocExists[monthKey];
+    var op = exists
+      ? ref.update(patches[monthKey])
+      : ref.set(deepMerge(JSON.parse(JSON.stringify(state.days[monthKey]||{})), patches[monthKey]));
+    if(!exists) state.daysDocExists[monthKey] = true;
+    return op;
+  });
+  Promise.all(ops).then(function(){
+    setSyncStatus("saved", "Synced");
+  }).catch(function(err){
+    console.warn("day save failed", err);
+    setSyncStatus("saved", "Save failed — retry by editing again");
+  });
+}
+
+/* ---------- expense day save (per-month dailyExpense doc) ---------- */
+function scheduleExpenseDaySave(monthKey, patch){
+  pendingExpenseDayPatches[monthKey] = deepMerge(pendingExpenseDayPatches[monthKey]||{}, patch);
+  setSyncStatus("saving", "Saving…");
+  clearTimeout(expenseDayScheduleTimer);
+  expenseDayScheduleTimer = setTimeout(flushExpenseDaySave, 500);
+}
+function flushExpenseDaySave(){
+  var patches = pendingExpenseDayPatches;
+  pendingExpenseDayPatches = {};
+  var monthKeys = Object.keys(patches);
+  if(!monthKeys.length) return;
+  if(!db || state.localOnly){
+    saveLocalExpenseDays();
+    setSyncStatus("saved", state.localOnly ? "Saved to this browser" : "Ready");
+    return;
+  }
+  var ops = monthKeys.map(function(monthKey){
+    var ref = docRef.collection("dailyExpense").doc(monthKey);
+    var exists = !!state.expenseDaysDocExists[monthKey];
+    var op = exists
+      ? ref.update(patches[monthKey])
+      : ref.set(deepMerge(JSON.parse(JSON.stringify(state.expenseDays[monthKey]||{})), patches[monthKey]));
+    if(!exists) state.expenseDaysDocExists[monthKey] = true;
+    return op;
+  });
+  Promise.all(ops).then(function(){
+    setSyncStatus("saved", "Synced");
+  }).catch(function(err){
+    console.warn("expense day save failed", err);
+    setSyncStatus("saved", "Save failed — retry by editing again");
+  });
+}
+
+/* ---------- events ---------- */
+function onFieldInput(e){
+  var t = e.target;
+  if(!t.matches("input[data-key]")) return;
+  var section = t.dataset.section, key = t.dataset.key, mode = t.dataset.mode;
+  var val = parseFloat(t.value);
+  if(isNaN(val)) val = 0;
+  state.data["m"+state.monthIdx][section][key][mode] = val;
+  var m = state.data["m"+state.monthIdx];
+  var pair = m[section][key];
+  setVarEl("v_"+section+"_"+key, pair.actual-pair.predicted, section==="income");
+  if(section==="income") updateIncomeComputed(); else updateExpenseComputed();
+  updateKpiRow();
+  var pill = document.querySelector('.month-pills button[data-month="'+state.monthIdx+'"]');
+  if(pill && monthHasData(m)) pill.classList.add("has-data");
+}
+function onFieldChange(e){
+  var t = e.target;
+  if(!t.matches("input[data-key]")) return;
+  var section = t.dataset.section, key = t.dataset.key, mode = t.dataset.mode;
+  var val = parseFloat(t.value); if(isNaN(val)) val = 0;
+  t.value = val;
+  var patch = {};
+  patch["m"+state.monthIdx] = {}; patch["m"+state.monthIdx][section] = {}; patch["m"+state.monthIdx][section][key] = {}; patch["m"+state.monthIdx][section][key][mode] = val;
+  scheduleSave(patch);
+}
+
+function onDayFieldInput(e){
+  var t = e.target;
+  if(!t.matches("input[data-key]")) return;
+  var day = t.dataset.day, key = t.dataset.key;
+  var val = parseFloat(t.value);
+  if(isNaN(val)) val = 0;
+  var monthKey = "m"+state.dayMonthIdx;
+  state.days[monthKey] = state.days[monthKey] || {};
+  state.days[monthKey][day] = state.days[monthKey][day] || {};
+  state.days[monthKey][day][key] = val;
+  updateDayFooter();
+  applyDailyRollups();
+  updateIncomeActualsDisplay();
+  updateIncomeComputed();
+  updateKpiRow();
+  var pill = document.querySelector('.month-pills button[data-month="'+state.dayMonthIdx+'"]');
+  if(pill) pill.classList.add("has-data");
+}
+function onDayFieldChange(e){
+  var t = e.target;
+  if(!t.matches("input[data-key]")) return;
+  var day = t.dataset.day, key = t.dataset.key;
+  var val = parseFloat(t.value); if(isNaN(val)) val = 0;
+  t.value = val;
+  var monthKey = "m"+state.dayMonthIdx;
+  var patch = {};
+  patch[day] = {};
+  patch[day][key] = val;
+  scheduleDaySave(monthKey, patch);
+}
+document.getElementById("dayTable").addEventListener("input", onDayFieldInput);
+document.getElementById("dayTable").addEventListener("change", onDayFieldChange);
+document.getElementById("dayMonthPills").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-daymonth]");
+  if(!b) return;
+  state.dayMonthIdx = parseInt(b.dataset.daymonth, 10);
+  renderDayView();
+});
+
+function onExpDayFieldInput(e){
+  var t = e.target;
+  if(!t.matches("input[data-key]")) return;
+  var key = t.dataset.key;
+  var val = parseFloat(t.value);
+  if(isNaN(val)) val = 0;
+  var monthKey = "m"+state.dayMonthIdx;
+  state.expenseDays[monthKey] = state.expenseDays[monthKey] || {};
+  state.expenseDays[monthKey][state.expDay] = state.expenseDays[monthKey][state.expDay] || {};
+  state.expenseDays[monthKey][state.expDay][key] = val;
+  var rec = expDayRec();
+  EXPENSE_GROUPS.forEach(function(g){
+    if(g.subtotalId) setText("d"+g.subtotalId, fmt(expDaySubtotal(rec, g.name)));
+    if(g.cogsLast) setText("dCogsTotal", fmt(expDayCogsTotal(rec)));
+  });
+  setText("dExpTotal", fmt(dayExpenseTotal(rec)));
+  var totEl = document.querySelector('#dayExpenseTable tr[data-jump="'+state.expDay+'"] td:last-child');
+  if(totEl) totEl.textContent = fmt(dayExpenseTotal(rec));
+  applyDailyRollups();
+  updateExpenseComputed();
+  updateKpiRow();
+  var pill = document.querySelector('.month-pills button[data-month="'+state.dayMonthIdx+'"]');
+  if(pill) pill.classList.add("has-data");
+}
+function onExpDayFieldChange(e){
+  var t = e.target;
+  if(!t.matches("input[data-key]")) return;
+  var key = t.dataset.key;
+  var val = parseFloat(t.value); if(isNaN(val)) val = 0;
+  t.value = val;
+  var monthKey = "m"+state.dayMonthIdx;
+  var patch = {};
+  patch[state.expDay] = {};
+  patch[state.expDay][key] = val;
+  scheduleExpenseDaySave(monthKey, patch);
+  var pillDay = document.querySelector('#expDayPills button[data-expday="'+state.expDay+'"]');
+  if(pillDay) pillDay.classList.add("has-data");
+}
+document.getElementById("dayExpensePanel").addEventListener("input", onExpDayFieldInput);
+document.getElementById("dayExpensePanel").addEventListener("change", onExpDayFieldChange);
+document.getElementById("expDayPills").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-expday]");
+  if(!b) return;
+  state.expDay = parseInt(b.dataset.expday, 10);
+  renderDayExpenseView();
+});
+document.getElementById("dayExpenseTable").addEventListener("click", function(e){
+  var tr = e.target.closest("tr[data-jump]");
+  if(!tr) return;
+  state.expDay = parseInt(tr.dataset.jump, 10);
+  renderDayExpenseView();
+});
+document.getElementById("dayModeToggle").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-daymode]");
+  if(!b) return;
+  document.querySelectorAll("#dayModeToggle button").forEach(function(x){ x.classList.remove("active"); });
+  b.classList.add("active");
+  state.dayMode = b.dataset.daymode;
+  document.getElementById("dayIncomeBody").style.display = state.dayMode==="income" ? "" : "none";
+  document.getElementById("dayExpenseBody").style.display = state.dayMode==="expense" ? "" : "none";
+  renderDayView();
+});
+
+document.getElementById("monthPills").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-month]");
+  if(!b) return;
+  state.monthIdx = parseInt(b.dataset.month, 10);
+  renderMonthView();
+});
+document.querySelectorAll(".view-tabs button").forEach(function(btn){
+  btn.addEventListener("click", function(){
+    document.querySelectorAll(".view-tabs button").forEach(function(b){ b.classList.remove("active"); });
+    btn.classList.add("active");
+    state.view = btn.dataset.view;
+    document.getElementById("dayView").style.display = state.view==="day" ? "" : "none";
+    document.getElementById("monthView").style.display = state.view==="month" ? "" : "none";
+    document.getElementById("yearView").style.display = state.view==="year" ? "" : "none";
+    renderAll();
+  });
+});
+document.getElementById("metricToggle").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-metric]");
+  if(!b) return;
+  document.querySelectorAll("#metricToggle button").forEach(function(x){ x.classList.remove("active"); });
+  b.classList.add("active");
+  state.chartMetric = b.dataset.metric;
+  renderChart();
+});
+document.getElementById("incomePanel").addEventListener("input", onFieldInput);
+document.getElementById("incomePanel").addEventListener("change", onFieldChange);
+document.getElementById("expensePanel").addEventListener("input", onFieldInput);
+document.getElementById("expensePanel").addEventListener("change", onFieldChange);
+
+document.getElementById("yearPrev").addEventListener("click", function(){ state.year -= 1; subscribeYear(); });
+document.getElementById("yearNext").addEventListener("click", function(){ state.year += 1; subscribeYear(); });
+
+document.getElementById("currencyInput").addEventListener("change", function(e){
+  var v = e.target.value.trim().toUpperCase() || "THB";
+  state.data.currency = v;
+  scheduleSave({currency:v});
+  renderAll();
+});
+
+/* ---------- boot ---------- */
+function boot(){
+  if(window.claude && window.claude.use){
+    window.claude.use("db").then(function(ns){
+      db = ns;
+      subscribeYear();
+    }).catch(function(){ db = null; subscribeYear(); });
+  } else {
+    db = null;
+    subscribeYear();
+  }
+}
+boot();
+
+/* ---------- report content height to a parent page embedding this via <iframe> ---------- */
+function reportHeightToParent(){
+  if(window.parent === window) return; // not embedded
+  try{
+    window.parent.postMessage({source:"mc-budget-forecast", height: document.documentElement.scrollHeight}, "*");
+  }catch(e){ /* ignore */ }
+}
+window.addEventListener("load", reportHeightToParent);
+if(window.ResizeObserver){
+  new ResizeObserver(reportHeightToParent).observe(document.body);
+} else {
+  setInterval(reportHeightToParent, 1000);
+}
+})();
+</script>
+</body>
+</html>
