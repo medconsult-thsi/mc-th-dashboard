@@ -447,7 +447,7 @@
     <script>
     const BRANCH_DATA = (function(){
       const xhr = new XMLHttpRequest();
-      xhr.open('GET', 'data.json', false);
+      xhr.open('GET', 'data.json?v=' + Date.now(), false);
       xhr.send(null);
       return JSON.parse(xhr.responseText);
     })();
