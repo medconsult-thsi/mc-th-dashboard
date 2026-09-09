@@ -205,12 +205,12 @@
         <button class="active" data-page="main">Main Dashboard</button>
         <button data-page="byGroup">Revenue by Group</button>
         <button data-page="weightLoss">Weight Loss</button>
+        <button data-page="budget">Budget</button>
       </div>
     </div>
     <div class="page-view active" id="pageMain">
     <div class="page">
-      <div class="kpi-row" style="grid-template-columns:repeat(5,1fr);">
-        <div class="kpi-card amber"><div class="kpi-label">Prediction</div><div class="kpi-value" id="kpiPredicted">-</div><div class="kpi-margin" id="kpiPredictedSub">-</div></div>
+      <div class="kpi-row">
         <div class="kpi-card blue"><div class="kpi-label">Grand Total Revenue</div><div class="kpi-value" id="kpiGrandTotal">-</div><div class="kpi-margin" id="kpiGrandDays">-</div></div>
         <div class="kpi-card teal"><div class="kpi-label">AE — Aesthetic</div><div class="kpi-value" id="kpiAE">-</div><div class="kpi-margin" id="kpiAEPct">-</div></div>
         <div class="kpi-card green"><div class="kpi-label">GP — General Practice</div><div class="kpi-value" id="kpiGP">-</div><div class="kpi-margin" id="kpiGPPct">-</div></div>
@@ -446,6 +446,31 @@
       </div>
     </div>
     </div>
+    <div class="page-view" id="pageBudget">
+    <div class="page">
+      <div class="chart-card" style="margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+        <div>
+          <div class="chart-title">MedConsult Budget Forecast</div>
+          <div class="chart-sub">Actual vs. predicted income and expenses, tracked day by day — a separate, live tool with its own shared data, so it opens in a new tab rather than showing inline here.</div>
+        </div>
+        <a class="report-btn" style="display:inline-block; text-decoration:none; white-space:nowrap;" id="budgetOpenLink" href="https://claude.ai/code/artifact/33c6fe9e-1291-48b3-9e48-8773060c7371" target="_blank" rel="noopener">Open Budget Forecast Tool &#8599;</a>
+      </div>
+
+      <div class="kpi-row" style="grid-template-columns:repeat(3,1fr);">
+        <div class="kpi-card amber"><div class="kpi-label">Predicted Revenue</div><div class="kpi-value" id="budgetPredicted">-</div><div class="kpi-margin" id="budgetPredictedSub">-</div></div>
+        <div class="kpi-card navy"><div class="kpi-label">Forecast Method</div><div class="kpi-value" id="budgetMethod" style="font-size:15px;">-</div><div class="kpi-margin" id="budgetMethodSub">-</div></div>
+        <div class="kpi-card gold"><div class="kpi-label">Day-of-Week Pattern</div><div class="kpi-value" id="budgetPatternStatus" style="font-size:15px;">-</div><div class="kpi-margin" id="budgetPatternSub">-</div></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header"><div><div class="chart-title">Average Revenue by Weekday</div>
+        <div class="chart-sub">Used to shape the daily prediction within the month. Based on every logged day for this branch.</div></div></div>
+        <table class="data-table"><thead><tr><th>Weekday</th><th class="right">Avg Revenue</th><th class="right">Days Sampled</th></tr></thead><tbody id="budgetWeekdayBody"></tbody></table>
+      </div>
+
+      <div class="empty-note" style="margin-top:14px; display:block;">This summary is calculated automatically from the same daily revenue data as the rest of this dashboard — a moving average of the trailing (up to 3) prior months, split across days by historical weekday share. Manual entry, expense tracking, and overrides live in the Budget Forecast tool itself — use the button above.</div>
+    </div>
+    </div>
     <div class="footer"><span id="footerLabel">MC - TH</span> — Financial Trend Dashboard</div>
     <script>
     const BRANCH_DATA = (function(){
@@ -488,7 +513,7 @@
       const total = win.reduce((s, k) => s + allMonths[k].summary.grand_total, 0);
       return total / win.length;
     }
-    function computeWeekdayFactors() {
+function computeWeekdayFactors() {
       const sums = {}, counts = {};
       DOW.forEach(d => { sums[d] = 0; counts[d] = 0; });
       let totalSampled = 0;
@@ -500,17 +525,21 @@
           totalSampled += 1;
         });
       });
-      if (totalSampled < 21) return null;
-      const known = DOW.filter(d => counts[d] > 0).map(d => sums[d] / counts[d]);
-      const fallbackAvg = known.reduce((a, b) => a + b, 0) / known.length;
-      const factors = {};
-      DOW.forEach(d => { factors[d] = counts[d] > 0 ? sums[d] / counts[d] : fallbackAvg; });
-      return factors;
+      const avg = {};
+      DOW.forEach(d => { avg[d] = counts[d] > 0 ? sums[d] / counts[d] : null; });
+      let factors = null;
+      if (totalSampled >= 21) {
+        const known = DOW.filter(d => avg[d] !== null).map(d => avg[d]);
+        const fallbackAvg = known.length ? known.reduce((a, b) => a + b, 0) / known.length : 0;
+        factors = {};
+        DOW.forEach(d => { factors[d] = avg[d] !== null ? avg[d] : fallbackAvg; });
+      }
+      return { factors, avg, counts, totalSampled };
     }
     function daysInMonthJS(year, monthNum) { return new Date(year, monthNum, 0).getDate(); }
     function distributeMonthlyPrediction(year, monthNum, predictedTotal) {
       const totalDays = daysInMonthJS(year, monthNum);
-      const factors = computeWeekdayFactors();
+      const factors = computeWeekdayFactors().factors;
       const raw = [];
       for (let d = 1; d <= totalDays; d++) {
         const jsDow = new Date(year, monthNum - 1, d).getDay(); // 0=Sun..6=Sat
@@ -531,27 +560,45 @@
       for (let i = 0; i < upto; i++) sumToDate += dist.values[i];
       return { predictedTotal, sumToDate, upto, totalDays, weighted: dist.weighted, isPartial };
     }
-    function renderPredictionKpi(year, monthNum, daysCovered, actualSoFar) {
-      const pred = predictedInfoFor(year, monthNum, daysCovered);
-      const valEl = document.getElementById('kpiPredicted');
-      const subEl = document.getElementById('kpiPredictedSub');
+    function refreshBudgetView() {
+      const wf = computeWeekdayFactors();
+      const priors = priorCompleteMonthKeys(curYear, curMonthNum);
+      const win = priors.slice(-3);
+      const daysCovered = data ? data.days_covered : 0;
+      const actual = data ? data.summary.grand_total : null;
+      const pred = predictedInfoFor(curYear, curMonthNum, daysCovered);
+
+      const valEl = document.getElementById('budgetPredicted');
+      const subEl = document.getElementById('budgetPredictedSub');
       if (!pred) {
-        valEl.textContent = '—';
+        valEl.textContent = '\u2014';
         subEl.textContent = 'Not enough prior months yet';
-        return;
-      }
-      const methodNote = pred.weighted ? '' : ' · flat split (building day-of-week history)';
-      if (actualSoFar === null || actualSoFar === undefined) {
+      } else if (actual === null || actual === undefined) {
         valEl.textContent = 'THB ' + fmtTHB(pred.predictedTotal);
-        subEl.textContent = `Full-month forecast — no actuals logged yet${methodNote}`;
-        return;
+        subEl.textContent = 'Full-month forecast \u2014 no actuals logged yet';
+      } else {
+        valEl.textContent = 'THB ' + fmtTHB(pred.sumToDate);
+        const diff = actual - pred.sumToDate;
+        const diffPct = pred.sumToDate ? (diff / pred.sumToDate * 100) : 0;
+        const sign = diff >= 0 ? '+' : '';
+        const scopeLabel = pred.isPartial ? `through day ${pred.upto}` : 'full month';
+        subEl.textContent = `${sign}THB ${fmtTHB(diff)} (${sign}${diffPct.toFixed(1)}%) vs actual, ${scopeLabel}`;
       }
-      valEl.textContent = 'THB ' + fmtTHB(pred.sumToDate);
-      const diff = actualSoFar - pred.sumToDate;
-      const diffPct = pred.sumToDate ? (diff / pred.sumToDate * 100) : 0;
-      const sign = diff >= 0 ? '+' : '';
-      const scopeLabel = pred.isPartial ? `through day ${pred.upto}` : 'full month';
-      subEl.textContent = `${sign}THB ${fmtTHB(diff)} (${sign}${diffPct.toFixed(1)}%) vs actual, ${scopeLabel}${methodNote}`;
+
+      document.getElementById('budgetMethod').textContent = win.length ? `${win.length}-month moving average` : 'No history yet';
+      document.getElementById('budgetMethodSub').textContent = win.length
+        ? 'Based on ' + win.map(k => allMonths[k].period).join(', ')
+        : 'Need at least one complete prior month';
+
+      document.getElementById('budgetPatternStatus').textContent = wf.factors ? 'Weighted' : 'Flat split';
+      document.getElementById('budgetPatternSub').textContent = wf.factors
+        ? `${wf.totalSampled} days sampled across history`
+        : `${wf.totalSampled} of ~21 days needed sampled`;
+
+      document.getElementById('budgetWeekdayBody').innerHTML = DOW.map(d => {
+        const a = wf.avg[d];
+        return `<tr><td>${d}</td><td class="right">${a !== null ? 'THB ' + fmtTHB(a) : '\u2014'}</td><td class="right">${wf.counts[d]}</td></tr>`;
+      }).join('');
     }
 
     /* ---------- predicted daily expense reference line ----------
@@ -654,6 +701,7 @@
     const pageMainEl = document.getElementById('pageMain');
     const pageGroupEl = document.getElementById('pageGroup');
     const pageWeightLossEl = document.getElementById('pageWeightLoss');
+    const pageBudgetEl = document.getElementById('pageBudget');
     topMenuEl.addEventListener('click', (e) => {
       const btn = e.target.closest('button[data-page]');
       if (!btn) return;
@@ -662,8 +710,10 @@
       pageMainEl.classList.toggle('active', view === 'main');
       pageGroupEl.classList.toggle('active', view === 'byGroup');
       pageWeightLossEl.classList.toggle('active', view === 'weightLoss');
+      pageBudgetEl.classList.toggle('active', view === 'budget');
       if (view === 'byGroup') refreshGrpActiveView();
       if (view === 'weightLoss') refreshWlActiveView();
+      if (view === 'budget') refreshBudgetView();
     });
 
     /* ---------- branch switcher (Thonglor / Silom) ----------
@@ -1465,7 +1515,7 @@
       document.getElementById('kpiGPPct').textContent = (grand ? (gp/grand*100).toFixed(1) : '0.0') + '% of total';
       document.getElementById('kpiPatients').textContent = data.unique_patients_total;
       document.getElementById('kpiAvgRev').textContent = 'Avg THB ' + fmtTHB(data.avg_revenue_per_patient) + ' / patient';
-      renderPredictionKpi(curYear, curMonthNum, data.days_covered, grand);
+      if (pageBudgetEl.classList.contains('active')) refreshBudgetView();
       document.getElementById('periodPill').textContent = data.period;
       document.getElementById('chartBadgeDays').textContent = data.days_covered + ' days';
 
@@ -1512,7 +1562,7 @@
       ['kpiGrandTotal','kpiAE','kpiGP'].forEach(id => document.getElementById(id).textContent = '—');
       ['kpiGrandDays','kpiAEPct','kpiGPPct','kpiAvgRev'].forEach(id => document.getElementById(id).textContent = 'No data');
       document.getElementById('kpiPatients').textContent = '—';
-      renderPredictionKpi(year, monthNum, 0, null);
+      if (pageBudgetEl.classList.contains('active')) refreshBudgetView();
       document.getElementById('periodPill').textContent = label;
       document.getElementById('chartBadgeDays').textContent = '0 days';
       document.getElementById('chartBadgeMA').textContent = '-';
