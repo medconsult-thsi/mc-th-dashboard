@@ -211,9 +211,9 @@
     <div class="page-view active" id="pageMain">
     <div class="page">
       <div class="kpi-row">
-        <div class="kpi-card blue"><div class="kpi-label">Grand Total Revenue</div><div class="kpi-value" id="kpiGrandTotal">-</div><div class="kpi-margin" id="kpiGrandDays">-</div></div>
-        <div class="kpi-card teal"><div class="kpi-label">AE — Aesthetic</div><div class="kpi-value" id="kpiAE">-</div><div class="kpi-margin" id="kpiAEPct">-</div></div>
-        <div class="kpi-card green"><div class="kpi-label">GP — General Practice</div><div class="kpi-value" id="kpiGP">-</div><div class="kpi-margin" id="kpiGPPct">-</div></div>
+        <div class="kpi-card blue"><div class="kpi-label">Grand Total Revenue</div><div class="kpi-value" id="kpiGrandTotal">-</div><div class="kpi-margin" id="kpiGrandDays">-</div><div class="kpi-source-list" id="kpiGrandPay"></div></div>
+        <div class="kpi-card teal"><div class="kpi-label">AE — Aesthetic</div><div class="kpi-value" id="kpiAE">-</div><div class="kpi-margin" id="kpiAEPct">-</div><div class="kpi-source-list" id="kpiAEPay"></div></div>
+        <div class="kpi-card green"><div class="kpi-label">GP — General Practice</div><div class="kpi-value" id="kpiGP">-</div><div class="kpi-margin" id="kpiGPPct">-</div><div class="kpi-source-list" id="kpiGPPay"></div></div>
         <div class="kpi-card gold"><div class="kpi-label">Unique Patients</div><div class="kpi-value" id="kpiPatients">-</div><div class="kpi-margin" id="kpiAvgRev">-</div></div>
       </div>
       <div class="insight-bar"><div style="font-size:18px;">&#9654;</div><div id="insightText">Loading…</div></div>
@@ -527,6 +527,13 @@
     let dailyLineChart=null, channelPieChart=null, aeCatChart=null, dowChart=null, movingAvgChart=null;
 
     function fmtTHB(n) { return Math.round(n).toLocaleString(); }
+    function paySourceRow(labelTxt, val) {
+      return '<div class="kpi-source-item"><span class="kpi-source-dot"></span>' + labelTxt + ' <b>THB ' + fmtTHB(val) + '</b></div>';
+    }
+    function paySourceListHTML(pay) {
+      const p = pay || { cash: 0, transfer: 0, credit: 0, other_pay: 0 };
+      return paySourceRow('Cash', p.cash) + paySourceRow('Transfer', p.transfer) + paySourceRow('Credit', p.credit) + paySourceRow('Other (SSO/Insurance/Voucher)', p.other_pay);
+    }
 
     /* ---------- unambiguous date formatting (avoid MM/DD vs DD/MM confusion) ---------- */
     const MONTH_ABBR_JS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1388,6 +1395,10 @@
       document.getElementById('kpiAEPct').textContent = (grand ? (ae/grand*100).toFixed(1) : '0.0') + '% of total';
       document.getElementById('kpiGP').textContent = 'THB ' + fmtTHB(gp);
       document.getElementById('kpiGPPct').textContent = (grand ? (gp/grand*100).toFixed(1) : '0.0') + '% of total';
+      const paySourceHTML = paySourceListHTML(data.summary.payment_breakdown);
+      document.getElementById('kpiGrandPay').innerHTML = paySourceHTML;
+      document.getElementById('kpiAEPay').innerHTML = paySourceHTML;
+      document.getElementById('kpiGPPay').innerHTML = paySourceHTML;
       document.getElementById('kpiPatients').textContent = data.unique_patients_total;
       document.getElementById('kpiAvgRev').textContent = 'Avg THB ' + fmtTHB(data.avg_revenue_per_patient) + ' / patient';
       document.getElementById('periodPill').textContent = data.period;
@@ -1435,6 +1446,7 @@
       const label = `${MONTH_NAMES_JS[monthNum-1]} ${year}`;
       ['kpiGrandTotal','kpiAE','kpiGP'].forEach(id => document.getElementById(id).textContent = '—');
       ['kpiGrandDays','kpiAEPct','kpiGPPct','kpiAvgRev'].forEach(id => document.getElementById(id).textContent = 'No data');
+      ['kpiGrandPay','kpiAEPay','kpiGPPay'].forEach(id => document.getElementById(id).innerHTML = '');
       document.getElementById('kpiPatients').textContent = '—';
       document.getElementById('periodPill').textContent = label;
       document.getElementById('chartBadgeDays').textContent = '0 days';
