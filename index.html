@@ -187,6 +187,48 @@
     .wl-table td.wl-fam-ozm { color: #2c7d6f; } .wl-table td.wl-fam-ryb { color: #8E5572; }
     .wl-var-cell { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 800; color: #fff; }
     .wl-badge-up { color: #1B7A3D; font-weight: 800; } .wl-badge-down { color: #B8382B; font-weight: 800; } .wl-badge-flat { color: #8492a3; font-weight: 700; }
+
+    /* ---------- table horizontal scroll (always on; harmless when a table already fits) ----------
+       Wide tables get wrapped in .table-scroll by JS (see wrapTables()) so their columns are never
+       lost or squeezed - viewers swipe/scroll sideways on narrow screens instead. */
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    /* ---------- Desktop / Mobile view toggle ----------
+       Auto picks a layout from screen width; Desktop/Mobile force one regardless of device,
+       so someone can preview the mobile layout on a laptop or pin desktop layout on a wide tablet.
+       Choice is remembered per-browser via localStorage. */
+    .view-toggle { display: inline-flex; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 20px; padding: 3px; gap: 2px; margin-top: 8px; }
+    .view-toggle button { border: none; background: transparent; color: #a8b8cc; font-size: 10px; font-weight: 800;
+      padding: 4px 10px; border-radius: 16px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.4px; }
+    .view-toggle button:not(.active):hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .view-toggle button.active { background: #2e6da4; color: #fff; }
+
+    /* ---------- mobile layout overrides ----------
+       Same markup, same data, same fields as desktop - only the arrangement changes: multi-column
+       grids stack to one (or two) columns, paddings/fonts shrink a notch, and wide tables scroll
+       sideways (via .table-scroll above) instead of clipping or shrinking illegibly. */
+    body.mobile-view .header { flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px 16px; height: auto; }
+    body.mobile-view .header-right { text-align: left; width: 100%; }
+    body.mobile-view .header-date, body.mobile-view .period-pill { display: inline-block; }
+    body.mobile-view .page { padding: 14px 12px; }
+    body.mobile-view .page-nav { padding: 10px 12px; }
+    body.mobile-view .top-menu { flex-wrap: wrap; }
+    body.mobile-view .top-menu button { font-size: 12px; padding: 8px 12px; }
+    body.mobile-view .kpi-row, body.mobile-view .kpi-row-flex { grid-template-columns: 1fr 1fr !important; gap: 10px; }
+    body.mobile-view .kpi-card-wide { grid-column: span 2; }
+    body.mobile-view .grid-2, body.mobile-view .grid-half, body.mobile-view .grid-third,
+    body.mobile-view .cal-wrap, body.mobile-view .grp-3col { grid-template-columns: 1fr !important; }
+    body.mobile-view .day-kpi-row { grid-template-columns: repeat(2, 1fr) !important; }
+    body.mobile-view .kpi-card { padding: 14px 16px; }
+    body.mobile-view .kpi-value { font-size: 21px; }
+    body.mobile-view .kpi-source-list { gap: 5px 12px; }
+    body.mobile-view .kpi-source-item { font-size: 11px; }
+    body.mobile-view .chart-card { padding: 16px 14px; }
+    body.mobile-view .grp-col { max-height: none; }
+    body.mobile-view .branch-toggle button, body.mobile-view .grp-toggle.primary button { padding: 9px 16px; font-size: 12px; }
+    body.mobile-view .report-controls { gap: 8px; }
+    body.mobile-view .preset-btn, body.mobile-view .date-input, body.mobile-view .report-btn { padding: 9px 14px; font-size: 13px; }
     </style>
     </head>
     <body>
@@ -202,6 +244,11 @@
         <div class="branch-toggle" id="branchToggle"><button data-branch="thonglor" class="active">Thonglor</button><button data-branch="silom" class="">Silom</button></div>
         <div class="header-date">Currency: THB &nbsp;|&nbsp; Confidential</div>
         <div class="period-pill" id="periodPill">Loading…</div>
+        <div class="view-toggle" id="viewToggle">
+          <button data-view="auto" class="active">Auto</button>
+          <button data-view="desktop">Desktop</button>
+          <button data-view="mobile">Mobile</button>
+        </div>
       </div>
     </div>
     <div class="page-nav">
@@ -490,6 +537,59 @@
     }
 
     if (window.ChartDataLabels) { Chart.register(ChartDataLabels); }
+
+    /* ---------- Desktop / Mobile view toggle ----------
+       'auto' (default) picks a layout from screen width via matchMedia; 'desktop'/'mobile' force
+       a layout regardless of device and are remembered in localStorage. No data or fields are
+       hidden in mobile layout - only column counts/paddings change (see CSS above). */
+    (function() {
+      const VIEW_KEY = 'mcDashboardViewMode';
+      const mq = window.matchMedia('(max-width: 820px)');
+      let viewMode = 'auto';
+      try { viewMode = localStorage.getItem(VIEW_KEY) || 'auto'; } catch (e) {}
+
+      function applyViewMode() {
+        const effective = viewMode === 'auto' ? (mq.matches ? 'mobile' : 'desktop') : viewMode;
+        document.body.classList.toggle('mobile-view', effective === 'mobile');
+        document.body.classList.toggle('desktop-view', effective === 'desktop');
+        document.querySelectorAll('#viewToggle button').forEach(b => b.classList.toggle('active', b.dataset.view === viewMode));
+      }
+      applyViewMode();
+      const viewToggleEl = document.getElementById('viewToggle');
+      if (viewToggleEl) {
+        viewToggleEl.addEventListener('click', (e) => {
+          const btn = e.target.closest('button[data-view]');
+          if (!btn) return;
+          viewMode = btn.dataset.view;
+          try { localStorage.setItem(VIEW_KEY, viewMode); } catch (e) {}
+          applyViewMode();
+        });
+      }
+      if (mq.addEventListener) {
+        mq.addEventListener('change', () => { if (viewMode === 'auto') applyViewMode(); });
+      }
+    })();
+
+    /* ---------- wrap every data table for horizontal scroll on narrow screens ----------
+       Runs once up front and again on every DOM mutation (month switches, page changes, expanding
+       group cards, the custom-range report, calendar day clicks all inject new <table> markup via
+       innerHTML). No columns are ever hidden - wide tables just scroll sideways instead of clipping. */
+    (function() {
+      function wrapTables(root) {
+        root.querySelectorAll('table.data-table, table.day-mini-table').forEach(t => {
+          if (t.parentElement && t.parentElement.classList.contains('table-scroll')) return;
+          const wrap = document.createElement('div');
+          wrap.className = 'table-scroll';
+          t.parentNode.insertBefore(wrap, t);
+          wrap.appendChild(t);
+        });
+      }
+      wrapTables(document);
+      const observer = new MutationObserver(muts => {
+        if (muts.some(m => m.addedNodes && m.addedNodes.length)) wrapTables(document);
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    })();
 
     /* ---------- active-branch state ----------
        Everything below used to be a one-time const computed from a single
