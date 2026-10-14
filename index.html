@@ -529,7 +529,7 @@
        can get its own figure later; anything without an explicit entry
        falls back to that branch's default. */
     const DEFAULT_EXPENSE_PER_DAY_BY_BRANCH = { thonglor: 400000, silom: 60000 };
-    const EXPENSE_PER_DAY_BY_MONTH = { 'thonglor:2026-7': 400000, 'silom:2026-7': 40000 };
+    const EXPENSE_PER_DAY_BY_MONTH = { 'thonglor:2026-7': 400000, 'silom:2026-7': 40000, 'thonglor:2026-9': 420000, 'thonglor:2026-10': 420000, 'silom:2026-9': 80000, 'silom:2026-10': 80000 };
     function expensePerDayFor(branch, year, monthNum) {
       const key = `${branch}:${year}-${monthNum}`;
       if (EXPENSE_PER_DAY_BY_MONTH.hasOwnProperty(key)) return EXPENSE_PER_DAY_BY_MONTH[key];
