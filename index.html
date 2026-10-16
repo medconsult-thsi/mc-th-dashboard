@@ -579,6 +579,12 @@
         </div>
       </div>
 
+      <div class="chart-card" style="margin-bottom:18px;">
+        <div class="chart-header"><div><div class="chart-title">Revenue Timeline</div>
+        <div class="chart-sub">New vs Returning, daily, selected range above</div></div></div>
+        <div style="height:260px;"><canvas id="custTimelineChart"></canvas></div>
+      </div>
+
       <div class="chart-card" id="custComparisonVisuals" style="display:none; margin-bottom:18px;">
         <div class="chart-header"><div><div class="chart-title">Customer Comparison</div>
         <div class="chart-sub">Current period vs the custom dates chosen above</div></div></div>
@@ -606,9 +612,6 @@
             <div style="height:200px;"><canvas id="custCmpRetChart"></canvas></div>
           </div>
         </div>
-        <div class="chart-header"><div><div class="chart-title">Revenue Timeline</div>
-        <div class="chart-sub">New vs Returning, daily, spanning both periods</div></div></div>
-        <div style="height:260px;"><canvas id="custCmpTimelineChart"></canvas></div>
       </div>
 
       <div class="chart-card">
@@ -915,8 +918,8 @@
       document.getElementById('custCompareCustomControls').style.display = 'none';
       document.getElementById('custCompareStart').value = '';
       document.getElementById('custCompareEnd').value = '';
-      [custCmpTotalChart, custCmpNewChart, custCmpRetChart, custCmpTimelineChart].forEach(c => { if (c) c.destroy(); });
-      custCmpTotalChart = custCmpNewChart = custCmpRetChart = custCmpTimelineChart = null;
+      [custCmpTotalChart, custCmpNewChart, custCmpRetChart, custTimelineChart].forEach(c => { if (c) c.destroy(); });
+      custCmpTotalChart = custCmpNewChart = custCmpRetChart = custTimelineChart = null;
       document.getElementById('custComparisonVisuals').style.display = 'none';
       contribRangeStart = null; contribRangeEnd = null; contribSelectedItems = [];
       refreshCustActiveView();
@@ -2116,7 +2119,8 @@
     let custRangeStart = null, custRangeEnd = null;
     let custCompareMode = 'none';
     let custTotalPieChart = null, custAEPieChart = null, custGPPieChart = null;
-    let custCmpTotalChart = null, custCmpNewChart = null, custCmpRetChart = null, custCmpTimelineChart = null;
+    let custCmpTotalChart = null, custCmpNewChart = null, custCmpRetChart = null;
+    let custTimelineChart = null;
     const custPieColors = ['#1a7a7a', '#1a7a4a'];
     const custPieLabels = ['New', 'Returning'];
 
@@ -2176,13 +2180,13 @@
       return { cash: agg[prefix + '_cash'], transfer: agg[prefix + '_transfer'], credit: agg[prefix + '_credit'], other_pay: agg[prefix + '_other'] };
     }
     function custUniqueCustomerCount(start, end) {
-      const ids = new Set();
+      const newIds = new Set(), oldIds = new Set(), allIds = new Set();
       custBranchDaily().forEach(d => {
         if (d.date < start || d.date > end) return;
-        (d.new_ids || []).forEach(id => ids.add(id));
-        (d.ret_ids || []).forEach(id => ids.add(id));
+        (d.new_ids || []).forEach(id => { newIds.add(id); allIds.add(id); });
+        (d.ret_ids || []).forEach(id => { oldIds.add(id); allIds.add(id); });
       });
-      return ids.size;
+      return { total: allIds.size, new: newIds.size, old: oldIds.size };
     }
     function custMetricValue(agg, metric) {
       if (metric === 'AE') return { new: agg.new_ae_rev, ret: agg.ret_ae_rev };
@@ -2201,13 +2205,14 @@
       const newPay = { cash: agg.new_ae_cash + agg.new_gp_cash, transfer: agg.new_ae_transfer + agg.new_gp_transfer, credit: agg.new_ae_credit + agg.new_gp_credit, other_pay: agg.new_ae_other + agg.new_gp_other };
       const retPay = { cash: agg.ret_ae_cash + agg.ret_gp_cash, transfer: agg.ret_ae_transfer + agg.ret_gp_transfer, credit: agg.ret_ae_credit + agg.ret_gp_credit, other_pay: agg.ret_ae_other + agg.ret_gp_other };
       const grandPay = { cash: newPay.cash + retPay.cash, transfer: newPay.transfer + retPay.transfer, credit: newPay.credit + retPay.credit, other_pay: newPay.other_pay + retPay.other_pay };
-      const uniqueCount = custUniqueCustomerCount(rangeStart, rangeEnd);
+      const uniqueStats = custUniqueCustomerCount(rangeStart, rangeEnd);
+      const uniqueCount = uniqueStats.total, uniqueNew = uniqueStats.new, uniqueOld = uniqueStats.old;
 
       document.getElementById('custTotalsRow').innerHTML = `
         <div class="kpi-card navy"><div class="kpi-label">Grand Total Revenue</div><div class="kpi-value">THB ${fmtTHB(grand)}</div>${custTrendHTML(grand, prevGrand)}<div class="kpi-source-list">${paySourceListHTML(grandPay)}</div></div>
         <div class="kpi-card teal"><div class="kpi-label">New Customers</div><div class="kpi-value">THB ${fmtTHB(newRev)}</div><div class="kpi-margin">${grand ? (newRev / grand * 100).toFixed(1) : '0.0'}% of total</div>${custTrendHTML(newRev, prevNewRev)}<div class="kpi-source-list">${paySourceListHTML(newPay)}</div></div>
         <div class="kpi-card green"><div class="kpi-label">Returning Customers</div><div class="kpi-value">THB ${fmtTHB(retRev)}</div><div class="kpi-margin">${grand ? (retRev / grand * 100).toFixed(1) : '0.0'}% of total</div>${custTrendHTML(retRev, prevRetRev)}<div class="kpi-source-list">${paySourceListHTML(retPay)}</div></div>
-        <div class="kpi-card blue"><div class="kpi-label">Unique Customers</div><div class="kpi-value">${uniqueCount.toLocaleString()}</div><div class="kpi-margin">in selected range</div></div>
+        <div class="kpi-card blue"><div class="kpi-label">Unique Customers</div><div class="kpi-value">${uniqueCount.toLocaleString()}</div><div class="kpi-margin">New ${uniqueNew.toLocaleString()} &middot; Old ${uniqueOld.toLocaleString()}</div></div>
       `;
 
       const combos = [
@@ -2286,16 +2291,17 @@
         data: { labels: [curLabel, cmpLabel], datasets: [{ data: [retCur, retCmp], backgroundColor: ['#1a7a4a', '#b8c2d0'] }] },
         options: noLabelOpts
       });
+    }
 
+    function renderCustTimeline(start, end) {
       const dailyMap = {};
       custBranchDaily().forEach(d => {
-        if ((d.date >= curStart && d.date <= curEnd) || (d.date >= cmpStart && d.date <= cmpEnd)) {
-          dailyMap[d.date] = { newRev: d.new_ae_rev + d.new_gp_rev, retRev: d.ret_ae_rev + d.ret_gp_rev };
-        }
+        if (d.date < start || d.date > end) return;
+        dailyMap[d.date] = { newRev: d.new_ae_rev + d.new_gp_rev, retRev: d.ret_ae_rev + d.ret_gp_rev };
       });
       const dates = Object.keys(dailyMap).sort();
-      if (custCmpTimelineChart) custCmpTimelineChart.destroy();
-      custCmpTimelineChart = new Chart(document.getElementById('custCmpTimelineChart'), {
+      if (custTimelineChart) custTimelineChart.destroy();
+      custTimelineChart = new Chart(document.getElementById('custTimelineChart'), {
         type: 'line',
         data: {
           labels: dates.map(fmtDateMed),
@@ -2344,6 +2350,7 @@
       }
       renderCustCards(agg, prevAgg, custRangeStart, custRangeEnd);
       renderCustCharts(agg);
+      renderCustTimeline(custRangeStart, custRangeEnd);
       renderCustComparisonVisuals(agg, prevAgg, custRangeStart, custRangeEnd, cmpStart, cmpEnd);
     }
 
