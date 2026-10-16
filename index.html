@@ -554,7 +554,8 @@
           <div class="chart-sub">New vs Returning, selected range</div></div></div>
           <div style="height:200px;"><canvas id="custTotalPieChart"></canvas></div>
           <div class="donut-legend" id="custTotalPieLegend"></div>
-          <div class="grp-toggle" id="custCompareToggle" style="margin-top:14px;">
+          <div class="kpi-label" style="margin-top:14px; margin-bottom:6px;">Customer Comparison</div>
+          <div class="grp-toggle" id="custCompareToggle">
             <button class="active" data-cmp="none">No Comparison</button>
             <button data-cmp="custom">Compare Custom Dates</button>
           </div>
@@ -578,9 +579,41 @@
         </div>
       </div>
 
+      <div class="chart-card" id="custComparisonVisuals" style="display:none; margin-bottom:18px;">
+        <div class="chart-header"><div><div class="chart-title">Customer Comparison</div>
+        <div class="chart-sub">Current period vs the custom dates chosen above</div></div></div>
+        <div class="grid-third">
+          <div class="chart-card">
+            <div class="chart-header"><div><div class="chart-title">Total Revenue</div></div></div>
+            <div style="height:200px;"><canvas id="custCmpTotalChart"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-header"><div><div class="chart-title">New Customers</div></div>
+            <select class="cal-select" id="custCmpNewMetric">
+              <option value="total">Total Revenue</option>
+              <option value="AE">Aesthetic (AE)</option>
+              <option value="GP">General Practice (GP)</option>
+            </select></div>
+            <div style="height:200px;"><canvas id="custCmpNewChart"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-header"><div><div class="chart-title">Returning Customers</div></div>
+            <select class="cal-select" id="custCmpRetMetric">
+              <option value="total">Total Revenue</option>
+              <option value="AE">Aesthetic (AE)</option>
+              <option value="GP">General Practice (GP)</option>
+            </select></div>
+            <div style="height:200px;"><canvas id="custCmpRetChart"></canvas></div>
+          </div>
+        </div>
+        <div class="chart-header"><div><div class="chart-title">Revenue Timeline</div>
+        <div class="chart-sub">New vs Returning, daily, spanning both periods</div></div></div>
+        <div style="height:260px;"><canvas id="custCmpTimelineChart"></canvas></div>
+      </div>
+
       <div class="chart-card">
         <div class="chart-header"><div><div class="chart-title">Item Ranking Report</div>
-        <div class="chart-sub">Kept as an on-demand report (not shown inline) so the page above stays readable - pick a customer group, section, how many to rank, and optionally search for an item.</div></div></div>
+        <div class="chart-sub">Pick a customer group, section, how many to rank, and optionally search for an item.</div></div></div>
         <div class="report-controls">
           <select class="cal-select" id="custItemCtype">
             <option value="all">All Customers</option>
@@ -606,7 +639,7 @@
 
       <div class="chart-card" style="margin-top:18px;">
         <div class="chart-header"><div><div class="chart-title">Revenue Contribution by Customers</div>
-        <div class="chart-sub">Search and pick items below. This section has its own date range, separate from the filter at the top of the page, and updates on its own.</div></div></div>
+        <div class="chart-sub">Search and pick items below.</div></div></div>
         <div class="report-controls">
           <div class="contrib-search-wrap">
             <input type="text" class="date-input" id="contribItemSearch" placeholder="Search item..." style="width:220px;" autocomplete="off">
@@ -882,6 +915,9 @@
       document.getElementById('custCompareCustomControls').style.display = 'none';
       document.getElementById('custCompareStart').value = '';
       document.getElementById('custCompareEnd').value = '';
+      [custCmpTotalChart, custCmpNewChart, custCmpRetChart, custCmpTimelineChart].forEach(c => { if (c) c.destroy(); });
+      custCmpTotalChart = custCmpNewChart = custCmpRetChart = custCmpTimelineChart = null;
+      document.getElementById('custComparisonVisuals').style.display = 'none';
       contribRangeStart = null; contribRangeEnd = null; contribSelectedItems = [];
       refreshCustActiveView();
     }
@@ -2080,6 +2116,7 @@
     let custRangeStart = null, custRangeEnd = null;
     let custCompareMode = 'none';
     let custTotalPieChart = null, custAEPieChart = null, custGPPieChart = null;
+    let custCmpTotalChart = null, custCmpNewChart = null, custCmpRetChart = null, custCmpTimelineChart = null;
     const custPieColors = ['#1a7a7a', '#1a7a4a'];
     const custPieLabels = ['New', 'Returning'];
 
@@ -2138,8 +2175,22 @@
     function custPaymentObj(agg, prefix) {
       return { cash: agg[prefix + '_cash'], transfer: agg[prefix + '_transfer'], credit: agg[prefix + '_credit'], other_pay: agg[prefix + '_other'] };
     }
+    function custUniqueCustomerCount(start, end) {
+      const ids = new Set();
+      custBranchDaily().forEach(d => {
+        if (d.date < start || d.date > end) return;
+        (d.new_ids || []).forEach(id => ids.add(id));
+        (d.ret_ids || []).forEach(id => ids.add(id));
+      });
+      return ids.size;
+    }
+    function custMetricValue(agg, metric) {
+      if (metric === 'AE') return { new: agg.new_ae_rev, ret: agg.ret_ae_rev };
+      if (metric === 'GP') return { new: agg.new_gp_rev, ret: agg.ret_gp_rev };
+      return { new: agg.new_ae_rev + agg.new_gp_rev, ret: agg.ret_ae_rev + agg.ret_gp_rev };
+    }
 
-    function renderCustCards(agg, prevAgg) {
+    function renderCustCards(agg, prevAgg, rangeStart, rangeEnd) {
       const newRev = agg.new_ae_rev + agg.new_gp_rev;
       const retRev = agg.ret_ae_rev + agg.ret_gp_rev;
       const grand = newRev + retRev;
@@ -2149,11 +2200,14 @@
 
       const newPay = { cash: agg.new_ae_cash + agg.new_gp_cash, transfer: agg.new_ae_transfer + agg.new_gp_transfer, credit: agg.new_ae_credit + agg.new_gp_credit, other_pay: agg.new_ae_other + agg.new_gp_other };
       const retPay = { cash: agg.ret_ae_cash + agg.ret_gp_cash, transfer: agg.ret_ae_transfer + agg.ret_gp_transfer, credit: agg.ret_ae_credit + agg.ret_gp_credit, other_pay: agg.ret_ae_other + agg.ret_gp_other };
+      const grandPay = { cash: newPay.cash + retPay.cash, transfer: newPay.transfer + retPay.transfer, credit: newPay.credit + retPay.credit, other_pay: newPay.other_pay + retPay.other_pay };
+      const uniqueCount = custUniqueCustomerCount(rangeStart, rangeEnd);
 
       document.getElementById('custTotalsRow').innerHTML = `
-        <div class="kpi-card navy"><div class="kpi-label">Grand Total Revenue</div><div class="kpi-value">THB ${fmtTHB(grand)}</div>${custTrendHTML(grand, prevGrand)}</div>
+        <div class="kpi-card navy"><div class="kpi-label">Grand Total Revenue</div><div class="kpi-value">THB ${fmtTHB(grand)}</div>${custTrendHTML(grand, prevGrand)}<div class="kpi-source-list">${paySourceListHTML(grandPay)}</div></div>
         <div class="kpi-card teal"><div class="kpi-label">New Customers</div><div class="kpi-value">THB ${fmtTHB(newRev)}</div><div class="kpi-margin">${grand ? (newRev / grand * 100).toFixed(1) : '0.0'}% of total</div>${custTrendHTML(newRev, prevNewRev)}<div class="kpi-source-list">${paySourceListHTML(newPay)}</div></div>
         <div class="kpi-card green"><div class="kpi-label">Returning Customers</div><div class="kpi-value">THB ${fmtTHB(retRev)}</div><div class="kpi-margin">${grand ? (retRev / grand * 100).toFixed(1) : '0.0'}% of total</div>${custTrendHTML(retRev, prevRetRev)}<div class="kpi-source-list">${paySourceListHTML(retPay)}</div></div>
+        <div class="kpi-card blue"><div class="kpi-label">Unique Customers</div><div class="kpi-value">${uniqueCount.toLocaleString()}</div><div class="kpi-margin">in selected range</div></div>
       `;
 
       const combos = [
@@ -2195,6 +2249,64 @@
       custAEPieChart = custRenderPie(custAEPieChart, 'custAEPieChart', 'custAEPieLegend', agg.new_ae_rev, agg.ret_ae_rev);
       custGPPieChart = custRenderPie(custGPPieChart, 'custGPPieChart', 'custGPPieLegend', agg.new_gp_rev, agg.ret_gp_rev);
     }
+    function renderCustComparisonVisuals(agg, prevAgg, curStart, curEnd, cmpStart, cmpEnd) {
+      const box = document.getElementById('custComparisonVisuals');
+      if (!prevAgg) { box.style.display = 'none'; return; }
+      box.style.display = '';
+      const curLabel = fmtDateMed(curStart) + ' - ' + fmtDateMed(curEnd);
+      const cmpLabel = fmtDateMed(cmpStart) + ' - ' + fmtDateMed(cmpEnd);
+      const barColors = ['#1a7a7a', '#b8c2d0'];
+      const noLabelOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { y: { beginAtZero: true } } };
+
+      const curTotal = agg.new_ae_rev + agg.new_gp_rev + agg.ret_ae_rev + agg.ret_gp_rev;
+      const cmpTotal = prevAgg.new_ae_rev + prevAgg.new_gp_rev + prevAgg.ret_ae_rev + prevAgg.ret_gp_rev;
+      if (custCmpTotalChart) custCmpTotalChart.destroy();
+      custCmpTotalChart = new Chart(document.getElementById('custCmpTotalChart'), {
+        type: 'bar',
+        data: { labels: [curLabel, cmpLabel], datasets: [{ data: [curTotal, cmpTotal], backgroundColor: barColors }] },
+        options: noLabelOpts
+      });
+
+      const newMetric = document.getElementById('custCmpNewMetric').value;
+      const newCur = custMetricValue(agg, newMetric).new;
+      const newCmp = custMetricValue(prevAgg, newMetric).new;
+      if (custCmpNewChart) custCmpNewChart.destroy();
+      custCmpNewChart = new Chart(document.getElementById('custCmpNewChart'), {
+        type: 'bar',
+        data: { labels: [curLabel, cmpLabel], datasets: [{ data: [newCur, newCmp], backgroundColor: barColors }] },
+        options: noLabelOpts
+      });
+
+      const retMetric = document.getElementById('custCmpRetMetric').value;
+      const retCur = custMetricValue(agg, retMetric).ret;
+      const retCmp = custMetricValue(prevAgg, retMetric).ret;
+      if (custCmpRetChart) custCmpRetChart.destroy();
+      custCmpRetChart = new Chart(document.getElementById('custCmpRetChart'), {
+        type: 'bar',
+        data: { labels: [curLabel, cmpLabel], datasets: [{ data: [retCur, retCmp], backgroundColor: ['#1a7a4a', '#b8c2d0'] }] },
+        options: noLabelOpts
+      });
+
+      const dailyMap = {};
+      custBranchDaily().forEach(d => {
+        if ((d.date >= curStart && d.date <= curEnd) || (d.date >= cmpStart && d.date <= cmpEnd)) {
+          dailyMap[d.date] = { newRev: d.new_ae_rev + d.new_gp_rev, retRev: d.ret_ae_rev + d.ret_gp_rev };
+        }
+      });
+      const dates = Object.keys(dailyMap).sort();
+      if (custCmpTimelineChart) custCmpTimelineChart.destroy();
+      custCmpTimelineChart = new Chart(document.getElementById('custCmpTimelineChart'), {
+        type: 'line',
+        data: {
+          labels: dates.map(fmtDateMed),
+          datasets: [
+            { label: 'New', data: dates.map(dt => dailyMap[dt].newRev), borderColor: '#1a7a7a', backgroundColor: 'transparent', tension: 0.3, pointRadius: 2 },
+            { label: 'Returning', data: dates.map(dt => dailyMap[dt].retRev), borderColor: '#1a7a4a', backgroundColor: 'transparent', tension: 0.3, pointRadius: 2 }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { datalabels: { display: false } }, scales: { y: { beginAtZero: true } } }
+      });
+    }
 
     function custSetRange(start, end) {
       if (start > end) { const t = start; start = end; end = t; }
@@ -2224,13 +2336,15 @@
 
       const agg = custAggRange(custRangeStart, custRangeEnd);
       let prevAgg = null;
+      let cmpStart = null, cmpEnd = null;
       if (custCompareMode === 'custom') {
-        const cs = document.getElementById('custCompareStart').value;
-        const ce = document.getElementById('custCompareEnd').value;
-        if (cs && ce) prevAgg = custAggRange(cs, ce);
+        cmpStart = document.getElementById('custCompareStart').value;
+        cmpEnd = document.getElementById('custCompareEnd').value;
+        if (cmpStart && cmpEnd) prevAgg = custAggRange(cmpStart, cmpEnd);
       }
-      renderCustCards(agg, prevAgg);
+      renderCustCards(agg, prevAgg, custRangeStart, custRangeEnd);
       renderCustCharts(agg);
+      renderCustComparisonVisuals(agg, prevAgg, custRangeStart, custRangeEnd, cmpStart, cmpEnd);
     }
 
     function refreshCustActiveView() {
@@ -2293,6 +2407,8 @@
     });
     document.getElementById('custCompareStart').addEventListener('change', () => { if (custCompareMode === 'custom') renderCustPage(); });
     document.getElementById('custCompareEnd').addEventListener('change', () => { if (custCompareMode === 'custom') renderCustPage(); });
+    document.getElementById('custCmpNewMetric').addEventListener('change', () => { if (custCompareMode === 'custom') renderCustPage(); });
+    document.getElementById('custCmpRetMetric').addEventListener('change', () => { if (custCompareMode === 'custom') renderCustPage(); });
 
     /* ---------- Revenue Contribution by Customers: fully isolated from the page's main
        date filter above - its own date range, its own item search/selection, its own table
