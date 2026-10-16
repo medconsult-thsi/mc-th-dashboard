@@ -197,6 +197,18 @@
     .cust-range-pill { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #dde4ef;
       border-radius: 20px; padding: 8px 16px; font-size: 13px; font-weight: 700; color: #1a2332; }
     .cust-range-icon { font-size: 14px; }
+    .contrib-search-wrap { position: relative; }
+    .contrib-search-dropdown { position: absolute; top: 100%; left: 0; z-index: 20; background: #fff; border: 1px solid #dde4ef;
+      border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.12); margin-top: 4px; min-width: 240px; max-height: 220px;
+      overflow-y: auto; display: none; }
+    .contrib-search-dropdown.visible { display: block; }
+    .contrib-search-dropdown .contrib-opt { padding: 8px 12px; font-size: 13px; cursor: pointer; }
+    .contrib-search-dropdown .contrib-opt:hover { background: #f0f3f8; }
+    .contrib-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .contrib-chip { display: inline-flex; align-items: center; gap: 6px; background: #edf2f9; color: #1e3a5f;
+      border-radius: 16px; padding: 5px 6px 5px 12px; font-size: 12px; font-weight: 700; }
+    .contrib-chip button { border: none; background: transparent; color: #1e3a5f; cursor: pointer; font-size: 14px;
+      font-weight: 800; line-height: 1; padding: 2px 4px; }
 
     /* ---------- table horizontal scroll (always on; harmless when a table already fits) ----------
        Wide tables get wrapped in .table-scroll by JS (see wrapTables()) so their columns are never
@@ -533,12 +545,6 @@
         </div>
       </div>
 
-      <div class="grp-toggle" id="custCompareToggle" style="margin-bottom:16px;">
-        <button class="active" data-cmp="none">No Comparison</button>
-        <button data-cmp="prevPeriod">Vs Previous Period</button>
-        <button data-cmp="prevMonth">Vs Same Dates, Prior Month</button>
-      </div>
-
       <div class="kpi-row-flex" id="custTotalsRow"></div>
       <div class="kpi-row-flex" id="custBreakdownRow"></div>
 
@@ -548,6 +554,15 @@
           <div class="chart-sub">New vs Returning, selected range</div></div></div>
           <div style="height:200px;"><canvas id="custTotalPieChart"></canvas></div>
           <div class="donut-legend" id="custTotalPieLegend"></div>
+          <div class="grp-toggle" id="custCompareToggle" style="margin-top:14px;">
+            <button class="active" data-cmp="none">No Comparison</button>
+            <button data-cmp="custom">Compare Custom Dates</button>
+          </div>
+          <div class="report-controls" id="custCompareCustomControls" style="display:none; margin-top:10px; margin-bottom:0;">
+            <input type="date" class="date-input" id="custCompareStart">
+            <span style="font-size:12px;color:#8a9bb0;">to</span>
+            <input type="date" class="date-input" id="custCompareEnd">
+          </div>
         </div>
         <div class="chart-card">
           <div class="chart-header"><div><div class="chart-title">Aesthetic (AE)</div>
@@ -587,6 +602,31 @@
         </div>
         <div class="report-placeholder" id="custItemPlaceholder">Choose filters above and click "Generate Report" to rank items for the selected date range.</div>
         <div class="report-output" id="custItemOutput"></div>
+      </div>
+
+      <div class="chart-card" style="margin-top:18px;">
+        <div class="chart-header"><div><div class="chart-title">Revenue Contribution by Customers</div>
+        <div class="chart-sub">Search and pick items below. This section has its own date range, separate from the filter at the top of the page, and updates on its own.</div></div></div>
+        <div class="report-controls">
+          <div class="contrib-search-wrap">
+            <input type="text" class="date-input" id="contribItemSearch" placeholder="Search item..." style="width:220px;" autocomplete="off">
+            <div id="contribSearchDropdown" class="contrib-search-dropdown"></div>
+          </div>
+          <input type="date" class="date-input" id="contribRangeStart">
+          <span style="font-size:12px;color:#8a9bb0;">to</span>
+          <input type="date" class="date-input" id="contribRangeEnd">
+        </div>
+        <div class="contrib-chips" id="contribChips"></div>
+        <div class="grid-2" style="margin-top:14px;">
+          <div>
+            <table class="data-table"><thead><tr><th>Item</th><th class="right">Returning (THB)</th><th class="right">New (THB)</th></tr></thead><tbody id="contribTableBody"></tbody></table>
+            <div class="empty-note" id="contribEmptyNote">Search and select at least one item above.</div>
+          </div>
+          <div>
+            <div style="height:220px;"><canvas id="contribPieChart"></canvas></div>
+            <div class="donut-legend" id="contribPieLegend"></div>
+          </div>
+        </div>
       </div>
     </div>
     </div>
@@ -837,6 +877,12 @@
       refreshWlActiveView();
 
       custRangeStart = null; custRangeEnd = null;
+      custCompareMode = 'none';
+      document.querySelectorAll('#custCompareToggle button').forEach(b => b.classList.toggle('active', b.dataset.cmp === 'none'));
+      document.getElementById('custCompareCustomControls').style.display = 'none';
+      document.getElementById('custCompareStart').value = '';
+      document.getElementById('custCompareEnd').value = '';
+      contribRangeStart = null; contribRangeEnd = null; contribSelectedItems = [];
       refreshCustActiveView();
     }
     document.getElementById('branchToggle').addEventListener('click', (e) => {
@@ -2065,11 +2111,6 @@
       const prevStart = custShiftDate(prevEnd, -(len - 1));
       return [prevStart, prevEnd];
     }
-    function custPrevMonthRange(start, end) {
-      const s = new Date(start + 'T00:00:00'), e = new Date(end + 'T00:00:00');
-      s.setMonth(s.getMonth() - 1); e.setMonth(e.getMonth() - 1);
-      return [s.toISOString().slice(0, 10), e.toISOString().slice(0, 10)];
-    }
     function custAggRange(start, end) {
       const agg = {
         new_ae_rev: 0, new_gp_rev: 0, ret_ae_rev: 0, ret_gp_rev: 0,
@@ -2088,11 +2129,11 @@
     function custTrendHTML(cur, prev) {
       if (prev === null || prev === undefined) return '';
       const pct = custPct(cur, prev);
-      if (pct === null) return '<div class="kpi-trend flat">no prior data</div>';
-      if (Math.abs(pct) < 0.5) return '<div class="kpi-trend flat">flat vs prior</div>';
+      if (pct === null) return '<div class="kpi-trend flat">no comparison data</div>';
+      if (Math.abs(pct) < 0.5) return '<div class="kpi-trend flat">flat vs comparison</div>';
       const cls = pct > 0 ? 'up' : 'down';
       const arrow = pct > 0 ? String.fromCharCode(0x25B2) : String.fromCharCode(0x25BC);
-      return `<div class="kpi-trend ${cls}">${arrow} ${Math.abs(pct).toFixed(1)}% vs prior</div>`;
+      return `<div class="kpi-trend ${cls}">${arrow} ${Math.abs(pct).toFixed(1)}% vs comparison</div>`;
     }
     function custPaymentObj(agg, prefix) {
       return { cash: agg[prefix + '_cash'], transfer: agg[prefix + '_transfer'], credit: agg[prefix + '_credit'], other_pay: agg[prefix + '_other'] };
@@ -2183,19 +2224,27 @@
 
       const agg = custAggRange(custRangeStart, custRangeEnd);
       let prevAgg = null;
-      if (custCompareMode === 'prevPeriod') {
-        const [ps, pe] = custPrevPeriodRange(custRangeStart, custRangeEnd);
-        prevAgg = custAggRange(ps, pe);
-      } else if (custCompareMode === 'prevMonth') {
-        const [ps, pe] = custPrevMonthRange(custRangeStart, custRangeEnd);
-        prevAgg = custAggRange(ps, pe);
+      if (custCompareMode === 'custom') {
+        const cs = document.getElementById('custCompareStart').value;
+        const ce = document.getElementById('custCompareEnd').value;
+        if (cs && ce) prevAgg = custAggRange(cs, ce);
       }
       renderCustCards(agg, prevAgg);
       renderCustCharts(agg);
     }
 
     function refreshCustActiveView() {
+      custRebuildItemNameList();
+      const bounds = custDataBounds();
+      if (bounds && (!contribRangeStart || !contribRangeEnd)) {
+        contribRangeEnd = bounds.max;
+        contribRangeStart = custShiftDate(bounds.max, -29);
+        if (contribRangeStart < bounds.min) contribRangeStart = bounds.min;
+        document.getElementById('contribRangeStart').value = contribRangeStart;
+        document.getElementById('contribRangeEnd').value = contribRangeEnd;
+      }
       renderCustPage();
+      renderContribSection();
     }
 
     document.querySelectorAll('.cust-preset-btn').forEach(btn => {
@@ -2231,8 +2280,108 @@
       document.querySelectorAll('#custCompareToggle button').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       custCompareMode = btn.dataset.cmp;
+      const customControls = document.getElementById('custCompareCustomControls');
+      customControls.style.display = custCompareMode === 'custom' ? 'flex' : 'none';
+      if (custCompareMode === 'custom') {
+        const csEl = document.getElementById('custCompareStart'), ceEl = document.getElementById('custCompareEnd');
+        if (!csEl.value || !ceEl.value) {
+          const [ps, pe] = custPrevPeriodRange(custRangeStart, custRangeEnd);
+          csEl.value = ps; ceEl.value = pe;
+        }
+      }
       renderCustPage();
     });
+    document.getElementById('custCompareStart').addEventListener('change', () => { if (custCompareMode === 'custom') renderCustPage(); });
+    document.getElementById('custCompareEnd').addEventListener('change', () => { if (custCompareMode === 'custom') renderCustPage(); });
+
+    /* ---------- Revenue Contribution by Customers: fully isolated from the page's main
+       date filter above - its own date range, its own item search/selection, its own table
+       and pie chart. Figures are pulled from the same CUSTOMER_DATA item rows as the Item
+       Ranking Report, so they match the rest of the page. ---------- */
+    let contribRangeStart = null, contribRangeEnd = null;
+    let contribSelectedItems = [];
+    let contribPieChart = null;
+    let custItemNameList = [];
+    function custRebuildItemNameList() {
+      const set = new Set();
+      custBranchItems().forEach(row => set.add(row[3]));
+      custItemNameList = Array.from(set).sort((a, b) => a.localeCompare(b));
+    }
+    function renderContribChips() {
+      const wrap = document.getElementById('contribChips');
+      wrap.innerHTML = contribSelectedItems.map(item =>
+        `<span class="contrib-chip">${item}<button type="button" data-remove="${item.replace(/"/g, '&quot;')}">&times;</button></span>`
+      ).join('');
+    }
+    function renderContribSection() {
+      renderContribChips();
+      const tbody = document.getElementById('contribTableBody');
+      const emptyNote = document.getElementById('contribEmptyNote');
+      if (!contribSelectedItems.length) {
+        tbody.innerHTML = '';
+        emptyNote.style.display = 'block';
+        if (contribPieChart) { contribPieChart.destroy(); contribPieChart = null; }
+        document.getElementById('contribPieLegend').innerHTML = '';
+        return;
+      }
+      emptyNote.style.display = 'none';
+      const items = custBranchItems();
+      const rows = contribSelectedItems.map(name => {
+        let newRev = 0, retRev = 0;
+        items.forEach(row => {
+          const [date, sec, ct, item, revenue] = row;
+          if (item !== name) return;
+          if (contribRangeStart && (date < contribRangeStart || date > contribRangeEnd)) return;
+          if (ct === 'new') newRev += revenue; else retRev += revenue;
+        });
+        return { item: name, newRev, retRev };
+      });
+      tbody.innerHTML = rows.map(r =>
+        `<tr><td>${r.item}</td><td class="right">THB ${fmtTHB(r.retRev)}</td><td class="right">THB ${fmtTHB(r.newRev)}</td></tr>`
+      ).join('');
+      const totalNew = rows.reduce((s, r) => s + r.newRev, 0);
+      const totalRet = rows.reduce((s, r) => s + r.retRev, 0);
+      contribPieChart = custRenderPie(contribPieChart, 'contribPieChart', 'contribPieLegend', totalNew, totalRet);
+    }
+    document.getElementById('contribItemSearch').addEventListener('input', () => {
+      const q = document.getElementById('contribItemSearch').value.trim().toLowerCase();
+      const dd = document.getElementById('contribSearchDropdown');
+      if (!q) { dd.classList.remove('visible'); dd.innerHTML = ''; return; }
+      const matches = custItemNameList.filter(n => n.toLowerCase().indexOf(q) !== -1 && contribSelectedItems.indexOf(n) === -1).slice(0, 5);
+      if (!matches.length) { dd.classList.remove('visible'); dd.innerHTML = ''; return; }
+      dd.innerHTML = matches.map(n => `<div class="contrib-opt" data-item="${n.replace(/"/g, '&quot;')}">${n}</div>`).join('');
+      dd.classList.add('visible');
+    });
+    document.getElementById('contribSearchDropdown').addEventListener('click', (e) => {
+      const opt = e.target.closest('.contrib-opt');
+      if (!opt) return;
+      const item = opt.dataset.item;
+      if (contribSelectedItems.indexOf(item) === -1) contribSelectedItems.push(item);
+      document.getElementById('contribItemSearch').value = '';
+      document.getElementById('contribSearchDropdown').classList.remove('visible');
+      document.getElementById('contribSearchDropdown').innerHTML = '';
+      renderContribSection();
+    });
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#contribItemSearch') && !e.target.closest('#contribSearchDropdown')) {
+        document.getElementById('contribSearchDropdown').classList.remove('visible');
+      }
+    });
+    document.getElementById('contribChips').addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-remove]');
+      if (!btn) return;
+      contribSelectedItems = contribSelectedItems.filter(i => i !== btn.dataset.remove);
+      renderContribSection();
+    });
+    function custApplyContribRange() {
+      const s = document.getElementById('contribRangeStart').value;
+      const e = document.getElementById('contribRangeEnd').value;
+      if (!s || !e) return;
+      contribRangeStart = s; contribRangeEnd = e;
+      renderContribSection();
+    }
+    document.getElementById('contribRangeStart').addEventListener('change', custApplyContribRange);
+    document.getElementById('contribRangeEnd').addEventListener('change', custApplyContribRange);
 
     document.getElementById('custItemGenerateBtn').addEventListener('click', () => {
       if (!custRangeStart || !custRangeEnd) return;
