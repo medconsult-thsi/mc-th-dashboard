@@ -87,6 +87,10 @@
       font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
     .preset-btn:hover { background: #dde7f5; }
     .preset-btn.active { background: #1e3a5f; color: #fff; }
+    .cust-preset-btn { background: #edf2f9; color: #1e3a5f; border: none; border-radius: 20px; padding: 7px 16px;
+      font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
+    .cust-preset-btn:hover { background: #dde7f5; }
+    .cust-preset-btn.active { background: #1e3a5f; color: #fff; }
     .date-input { border: 1px solid #dde4ef; border-radius: 8px; padding: 6px 10px; font-size: 13px; font-family: inherit; }
     .report-btn { background: linear-gradient(135deg, #1a7a4a, #1a5a34); color: #fff; border: none; border-radius: 20px;
       padding: 8px 22px; font-size: 14px; font-weight: 700; cursor: pointer; margin-left: auto; }
@@ -188,6 +192,14 @@
     .wl-var-cell { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 800; color: #fff; }
     .wl-badge-up { color: #1B7A3D; font-weight: 800; } .wl-badge-down { color: #B8382B; font-weight: 800; } .wl-badge-flat { color: #8492a3; font-weight: 700; }
 
+    /* ---------- Revenue by Customers page: plain calendar range picker (no per-day revenue heat;
+       this calendar is a date filter only - see cust-day/in-range/selected below) ---------- */
+    #custCalGrid .cal-cell.cust-day { background:#eef2f8; color:#1a2332; cursor:pointer; font-weight:700; }
+    #custCalGrid .cal-cell.cust-day:hover { background:#dbe4f3; }
+    #custCalGrid .cal-cell.cust-day.in-range { background:#c9ddf5; }
+    #custCalGrid .cal-cell.cust-day.selected { outline: 3px solid #1a5a34; outline-offset:1px; background:#1a7a4a; color:#fff; }
+    #custCalGrid .cal-cell.no-data { opacity:0.3; cursor:default; }
+
     /* ---------- table horizontal scroll (always on; harmless when a table already fits) ----------
        Wide tables get wrapped in .table-scroll by JS (see wrapTables()) so their columns are never
        lost or squeezed - viewers swipe/scroll sideways on narrow screens instead. */
@@ -228,7 +240,7 @@
     body.mobile-view .grp-col { max-height: none; }
     body.mobile-view .branch-toggle button, body.mobile-view .grp-toggle.primary button { padding: 9px 16px; font-size: 12px; }
     body.mobile-view .report-controls { gap: 8px; }
-    body.mobile-view .preset-btn, body.mobile-view .date-input, body.mobile-view .report-btn { padding: 9px 14px; font-size: 13px; }
+    body.mobile-view .preset-btn, body.mobile-view .cust-preset-btn, body.mobile-view .date-input, body.mobile-view .report-btn { padding: 9px 14px; font-size: 13px; }
     </style>
     </head>
     <body>
@@ -242,7 +254,7 @@
       </div>
       <div class="header-right">
         <div class="branch-toggle" id="branchToggle"><button data-branch="thonglor" class="active">Thonglor</button><button data-branch="silom" class="">Silom</button></div>
-        <div class="header-date">Currency: THB &nbsp;|&nbsp; Confidential</div>
+        <div class="header-date">Currency: THB</div>
         <div class="period-pill" id="periodPill">Loading…</div>
         <div class="view-toggle" id="viewToggle">
           <button data-view="auto" class="active">Auto</button>
@@ -252,12 +264,14 @@
       </div>
     </div>
     <div class="page-nav">
-      <div class="top-menu" id="topMenu">
-        <button class="active" data-page="main">Main Dashboard</button>
-        <button data-page="byGroup">Revenue by Group</button>
-        <button data-page="weightLoss">Weight Loss</button>
-        <button data-page="budget">Budget</button>
-      </div>
+      <label for="topMenu">View</label>
+      <select class="page-select" id="topMenu">
+        <option value="main">Main Dashboard</option>
+        <option value="byGroup">Revenue by Group</option>
+        <option value="weightLoss">Weight Loss</option>
+        <option value="budget">Budget</option>
+        <option value="customers">Revenue by Customers</option>
+      </select>
     </div>
     <div class="page-view active" id="pageMain">
     <div class="page">
@@ -506,6 +520,86 @@
       <iframe id="budgetIframe" src="budget-forecast.html?v=20261015" title="MedConsult Budget Forecast" style="width:100%; height:900px; border:1px solid #dbe2ea; border-radius:12px; background:#fff; display:block;"></iframe>
     </div>
     </div>
+    <div class="page-view" id="pageCustomers">
+    <div class="page">
+      <div class="chart-card" style="margin-bottom:16px;">
+        <div class="chart-header"><div><div class="chart-title">Date Range Filter</div>
+        <div class="chart-sub">Pick a start day then an end day on the calendar, or use a preset / type exact dates. Every card, chart and table below updates immediately - no "apply" button needed.</div></div>
+        <div class="chart-badge" id="custRangeBadge">-</div></div>
+        <div class="report-controls" style="margin-bottom:14px;">
+          <button class="cust-preset-btn" data-cdays="7">Last 7 Days</button>
+          <button class="cust-preset-btn" data-cdays="30">Last 30 Days</button>
+          <button class="cust-preset-btn" data-cdays="90">Last 90 Days</button>
+          <button class="cust-preset-btn" data-cdays="all">All Data (Jan - Present)</button>
+          <input type="date" class="date-input" id="custRangeStart">
+          <span style="font-size:12px;color:#8a9bb0;">to</span>
+          <input type="date" class="date-input" id="custRangeEnd">
+        </div>
+        <div class="cal-nav">
+          <button class="cal-nav-btn" id="custCalPrev">&#9664;</button>
+          <select class="cal-select" id="custMonthSelect"></select>
+          <select class="cal-select" id="custYearSelect"></select>
+          <button class="cal-nav-btn" id="custCalNext">&#9654;</button>
+        </div>
+        <div class="cal-grid" id="custCalDow"></div>
+        <div class="cal-grid" id="custCalGrid" style="margin-top:6px;"></div>
+      </div>
+
+      <div class="grp-toggle" id="custCompareToggle" style="margin-bottom:16px;">
+        <button class="active" data-cmp="none">No Comparison</button>
+        <button data-cmp="prevPeriod">Vs Previous Period</button>
+        <button data-cmp="prevMonth">Vs Same Dates, Prior Month</button>
+      </div>
+
+      <div class="kpi-row-flex" id="custTotalsRow"></div>
+      <div class="kpi-row-flex" id="custBreakdownRow"></div>
+
+      <div class="grid-half">
+        <div class="chart-card">
+          <div class="chart-header"><div><div class="chart-title">Revenue: New vs Returning</div>
+          <div class="chart-sub">Aesthetic (AE) vs General Practice (GP), selected range</div></div></div>
+          <div style="height:260px;"><canvas id="custRevChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><div><div class="chart-title">Payment Method Split</div>
+          <div class="chart-sub">New vs Returning, selected range</div></div></div>
+          <div style="height:260px;"><canvas id="custPayChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="chart-card" style="margin-bottom:18px;">
+        <div class="chart-header"><div><div class="chart-title">Unique Customers per Day</div>
+        <div class="chart-sub">New vs Returning, split Aesthetic (AE) / General Practice (GP), selected range</div></div></div>
+        <div style="height:280px;"><canvas id="custDailyChart"></canvas></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header"><div><div class="chart-title">Item Ranking Report</div>
+        <div class="chart-sub">Kept as an on-demand report (not shown inline) so the page above stays readable - pick a customer group, section, how many to rank, and optionally search for an item.</div></div></div>
+        <div class="report-controls">
+          <select class="cal-select" id="custItemCtype">
+            <option value="all">All Customers</option>
+            <option value="new">New Customers</option>
+            <option value="returning">Returning Customers</option>
+          </select>
+          <select class="cal-select" id="custItemSection">
+            <option value="all">AE + GP</option>
+            <option value="AE">Aesthetic (AE)</option>
+            <option value="GP">General Practice (GP)</option>
+          </select>
+          <select class="cal-select" id="custItemTopN">
+            <option value="5">Top 5</option>
+            <option value="10" selected>Top 10</option>
+            <option value="15">Top 15</option>
+          </select>
+          <input type="text" class="date-input" id="custItemSearch" placeholder="Search item...">
+          <button class="report-btn" id="custItemGenerateBtn">Generate Report</button>
+        </div>
+        <div class="report-placeholder" id="custItemPlaceholder">Choose filters above and click "Generate Report" to rank items for the selected date range.</div>
+        <div class="report-output" id="custItemOutput"></div>
+      </div>
+    </div>
+    </div>
     <div class="footer"><span id="footerLabel">MC - TH</span> - Financial Trend Dashboard</div>
     <script>
     const BRANCH_DATA = (function(){
@@ -513,6 +607,19 @@
       xhr.open('GET', 'data.json?v=' + Date.now(), false);
       xhr.send(null);
       return JSON.parse(xhr.responseText);
+    })();
+    /* customer_revenue.json: New-vs-Returning customer revenue analysis, built by
+       Automation/customer_revenue_pipeline.py (same classify()/classify_silom() rules
+       as the main dashboard - see build note in that script). Loaded the same way as
+       BRANCH_DATA; wrapped in try/catch so an old deploy missing this file doesn't
+       break the rest of the dashboard, just leaves the Revenue by Customers tab empty. */
+    const CUSTOMER_DATA = (function(){
+      try {
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', 'customer_revenue.json?v=' + Date.now(), false);
+        xhr.send(null);
+        return JSON.parse(xhr.responseText);
+      } catch (e) { return {}; }
     })();
     const BRANCH_ORDER = ["thonglor", "silom"];
     const DEFAULT_BRANCH = "thonglor";
@@ -692,17 +799,17 @@
         if (ifr) ifr.style.height = Math.max(600, e.data.height + 20) + 'px';
       }
     });
-    topMenuEl.addEventListener('click', (e) => {
-      const btn = e.target.closest('button[data-page]');
-      if (!btn) return;
-      const view = btn.dataset.page;
-      document.querySelectorAll('#topMenu button').forEach(b => b.classList.toggle('active', b === btn));
+    const pageCustomersEl = document.getElementById('pageCustomers');
+    topMenuEl.addEventListener('change', () => {
+      const view = topMenuEl.value;
       pageMainEl.classList.toggle('active', view === 'main');
       pageGroupEl.classList.toggle('active', view === 'byGroup');
       pageWeightLossEl.classList.toggle('active', view === 'weightLoss');
       pageBudgetEl.classList.toggle('active', view === 'budget');
+      pageCustomersEl.classList.toggle('active', view === 'customers');
       if (view === 'byGroup') refreshGrpActiveView();
       if (view === 'weightLoss') refreshWlActiveView();
+      if (view === 'customers') refreshCustActiveView();
     });
 
     /* ---------- branch switcher (Thonglor / Silom) ----------
@@ -738,6 +845,9 @@
       wlCalYear = null; wlCalMonthNum = DEFAULT_MONTH;
       wlSelectedDate = null;
       refreshWlActiveView();
+
+      custRangeStart = null; custRangeEnd = null; custPickStart = null; custCalYear = null;
+      refreshCustActiveView();
     }
     document.getElementById('branchToggle').addEventListener('click', (e) => {
       const btn = e.target.closest('button[data-branch]');
@@ -1923,6 +2033,329 @@
         <div class="day-kpi-row" style="grid-template-columns: 1fr;"><div class="day-kpi"><div class="day-kpi-label">Total Pens</div><div class="day-kpi-value">${rec.total}</div></div></div>
         <table class="day-mini-table"><tbody>${rows}</tbody></table>`;
     }
+
+    /* ===================== Revenue by Customers page =====================
+       New vs Returning split: a patient is "New" on the first date (per branch)
+       their HN (or, if HN is blank, their normalized name) appears anywhere in
+       Jan 2026 - present; every later visit is "Returning". Computed once by
+       Automation/customer_revenue_pipeline.py and shipped as customer_revenue.json
+       - this page only aggregates/filters/charts it. No HN or patient name is
+       ever rendered here, only aggregate counts and revenue. */
+    let custCalYear = null, custCalMonthNum = null;
+    let custRangeStart = null, custRangeEnd = null;
+    let custPickStart = null;
+    let custCompareMode = 'none';
+    let custRevChart = null, custPayChart = null, custDailyChart = null;
+
+    function custBranchDaily() {
+      const b = CUSTOMER_DATA[currentBranch];
+      return (b && b.daily) ? b.daily : [];
+    }
+    function custBranchItems() {
+      const b = CUSTOMER_DATA[currentBranch];
+      return (b && b.items) ? b.items : [];
+    }
+    function custDataBounds() {
+      const daily = custBranchDaily();
+      if (!daily.length) return null;
+      return { min: daily[0].date, max: daily[daily.length - 1].date };
+    }
+    function custShiftDate(dateStr, days) {
+      const d = new Date(dateStr + 'T00:00:00');
+      d.setDate(d.getDate() + days);
+      return d.toISOString().slice(0, 10);
+    }
+    function custDaysBetween(a, b) {
+      const da = new Date(a + 'T00:00:00'), db = new Date(b + 'T00:00:00');
+      return Math.round((db - da) / 86400000) + 1;
+    }
+    function custPrevPeriodRange(start, end) {
+      const len = custDaysBetween(start, end);
+      const prevEnd = custShiftDate(start, -1);
+      const prevStart = custShiftDate(prevEnd, -(len - 1));
+      return [prevStart, prevEnd];
+    }
+    function custPrevMonthRange(start, end) {
+      const s = new Date(start + 'T00:00:00'), e = new Date(end + 'T00:00:00');
+      s.setMonth(s.getMonth() - 1); e.setMonth(e.getMonth() - 1);
+      return [s.toISOString().slice(0, 10), e.toISOString().slice(0, 10)];
+    }
+    function custAggRange(start, end) {
+      const agg = {
+        new_ae_rev: 0, new_gp_rev: 0, ret_ae_rev: 0, ret_gp_rev: 0,
+        new_ae_cash: 0, new_ae_transfer: 0, new_ae_credit: 0, new_ae_other: 0,
+        new_gp_cash: 0, new_gp_transfer: 0, new_gp_credit: 0, new_gp_other: 0,
+        ret_ae_cash: 0, ret_ae_transfer: 0, ret_ae_credit: 0, ret_ae_other: 0,
+        ret_gp_cash: 0, ret_gp_transfer: 0, ret_gp_credit: 0, ret_gp_other: 0,
+      };
+      custBranchDaily().forEach(d => {
+        if (d.date < start || d.date > end) return;
+        Object.keys(agg).forEach(k => { agg[k] += (d[k] || 0); });
+      });
+      return agg;
+    }
+    function custPct(a, b) { return b ? (a - b) / b * 100 : null; }
+    function custTrendHTML(cur, prev) {
+      if (prev === null || prev === undefined) return '';
+      const pct = custPct(cur, prev);
+      if (pct === null) return '<div class="kpi-trend flat">no prior data</div>';
+      if (Math.abs(pct) < 0.5) return '<div class="kpi-trend flat">flat vs prior</div>';
+      const cls = pct > 0 ? 'up' : 'down';
+      const arrow = pct > 0 ? String.fromCharCode(0x25B2) : String.fromCharCode(0x25BC);
+      return `<div class="kpi-trend ${cls}">${arrow} ${Math.abs(pct).toFixed(1)}% vs prior</div>`;
+    }
+    function custPaymentObj(agg, prefix) {
+      return { cash: agg[prefix + '_cash'], transfer: agg[prefix + '_transfer'], credit: agg[prefix + '_credit'], other_pay: agg[prefix + '_other'] };
+    }
+
+    function renderCustCards(agg, prevAgg) {
+      const newRev = agg.new_ae_rev + agg.new_gp_rev;
+      const retRev = agg.ret_ae_rev + agg.ret_gp_rev;
+      const grand = newRev + retRev;
+      const prevNewRev = prevAgg ? prevAgg.new_ae_rev + prevAgg.new_gp_rev : null;
+      const prevRetRev = prevAgg ? prevAgg.ret_ae_rev + prevAgg.ret_gp_rev : null;
+      const prevGrand = prevAgg ? (prevNewRev + prevRetRev) : null;
+
+      const newPay = { cash: agg.new_ae_cash + agg.new_gp_cash, transfer: agg.new_ae_transfer + agg.new_gp_transfer, credit: agg.new_ae_credit + agg.new_gp_credit, other_pay: agg.new_ae_other + agg.new_gp_other };
+      const retPay = { cash: agg.ret_ae_cash + agg.ret_gp_cash, transfer: agg.ret_ae_transfer + agg.ret_gp_transfer, credit: agg.ret_ae_credit + agg.ret_gp_credit, other_pay: agg.ret_ae_other + agg.ret_gp_other };
+
+      document.getElementById('custTotalsRow').innerHTML = `
+        <div class="kpi-card navy"><div class="kpi-label">Grand Total Revenue</div><div class="kpi-value">THB ${fmtTHB(grand)}</div>${custTrendHTML(grand, prevGrand)}</div>
+        <div class="kpi-card teal"><div class="kpi-label">New Customers</div><div class="kpi-value">THB ${fmtTHB(newRev)}</div><div class="kpi-margin">${grand ? (newRev / grand * 100).toFixed(1) : '0.0'}% of total</div>${custTrendHTML(newRev, prevNewRev)}<div class="kpi-source-list">${paySourceListHTML(newPay)}</div></div>
+        <div class="kpi-card green"><div class="kpi-label">Returning Customers</div><div class="kpi-value">THB ${fmtTHB(retRev)}</div><div class="kpi-margin">${grand ? (retRev / grand * 100).toFixed(1) : '0.0'}% of total</div>${custTrendHTML(retRev, prevRetRev)}<div class="kpi-source-list">${paySourceListHTML(retPay)}</div></div>
+      `;
+
+      const combos = [
+        { key: 'new_ae', label: 'New - Aesthetic (AE)', cls: 'teal' },
+        { key: 'new_gp', label: 'New - General Practice (GP)', cls: 'green' },
+        { key: 'ret_ae', label: 'Returning - Aesthetic (AE)', cls: 'blue' },
+        { key: 'ret_gp', label: 'Returning - General Practice (GP)', cls: 'gold' },
+      ];
+      document.getElementById('custBreakdownRow').innerHTML = combos.map(c => {
+        const rev = agg[c.key + '_rev'];
+        const prevRev = prevAgg ? prevAgg[c.key + '_rev'] : null;
+        const pay = custPaymentObj(agg, c.key);
+        return `<div class="kpi-card ${c.cls}"><div class="kpi-label">${c.label}</div><div class="kpi-value">THB ${fmtTHB(rev)}</div>${custTrendHTML(rev, prevRev)}<div class="kpi-source-list">${paySourceListHTML(pay)}</div></div>`;
+      }).join('');
+    }
+
+    function renderCustCharts(agg, dailyRows) {
+      if (custRevChart) custRevChart.destroy();
+      if (custPayChart) custPayChart.destroy();
+      if (custDailyChart) custDailyChart.destroy();
+
+      custRevChart = new Chart(document.getElementById('custRevChart'), {
+        type: 'bar',
+        data: {
+          labels: ['Aesthetic (AE)', 'General Practice (GP)'],
+          datasets: [
+            { label: 'New Customers', backgroundColor: '#1a7a7a', data: [agg.new_ae_rev, agg.new_gp_rev] },
+            { label: 'Returning Customers', backgroundColor: '#1a7a4a', data: [agg.ret_ae_rev, agg.ret_gp_rev] },
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, datalabels: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => fmtTHB(v) } } } }
+      });
+
+      const newPayArr = [agg.new_ae_cash + agg.new_gp_cash, agg.new_ae_transfer + agg.new_gp_transfer, agg.new_ae_credit + agg.new_gp_credit, agg.new_ae_other + agg.new_gp_other];
+      const retPayArr = [agg.ret_ae_cash + agg.ret_gp_cash, agg.ret_ae_transfer + agg.ret_gp_transfer, agg.ret_ae_credit + agg.ret_gp_credit, agg.ret_ae_other + agg.ret_gp_other];
+      custPayChart = new Chart(document.getElementById('custPayChart'), {
+        type: 'bar',
+        data: {
+          labels: ['Cash', 'Transfer', 'Credit', 'Other'],
+          datasets: [
+            { label: 'New Customers', backgroundColor: '#1a7a7a', data: newPayArr },
+            { label: 'Returning Customers', backgroundColor: '#1a7a4a', data: retPayArr },
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, datalabels: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => fmtTHB(v) } } } }
+      });
+
+      const labels = dailyRows.map(d => fmtDateShort(d.date));
+      const sparse = dailyRows.length > 60;
+      custDailyChart = new Chart(document.getElementById('custDailyChart'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'New - AE', borderColor: '#1a7a7a', backgroundColor: '#1a7a7a', data: dailyRows.map(d => d.new_ae_customers), tension: 0.25, pointRadius: sparse ? 0 : 2 },
+            { label: 'New - GP', borderColor: '#1a7a4a', backgroundColor: '#1a7a4a', data: dailyRows.map(d => d.new_gp_customers), tension: 0.25, pointRadius: sparse ? 0 : 2 },
+            { label: 'Returning - AE', borderColor: '#2e6da4', backgroundColor: '#2e6da4', data: dailyRows.map(d => d.ret_ae_customers), tension: 0.25, pointRadius: sparse ? 0 : 2 },
+            { label: 'Returning - GP', borderColor: '#c8931a', backgroundColor: '#c8931a', data: dailyRows.map(d => d.ret_gp_customers), tension: 0.25, pointRadius: sparse ? 0 : 2 },
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, datalabels: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+      });
+    }
+
+    function custRenderCalendar() {
+      const monthSel = document.getElementById('custMonthSelect');
+      const yearSel = document.getElementById('custYearSelect');
+      if (!monthSel.options.length) {
+        monthSel.innerHTML = MONTH_NAMES_JS.map((m, i) => `<option value="${i + 1}">${m}</option>`).join('');
+        let opts = ''; for (let y = YEAR_MIN; y <= YEAR_MAX; y++) opts += `<option value="${y}">${y}</option>`;
+        yearSel.innerHTML = opts;
+      }
+      monthSel.value = String(custCalMonthNum);
+      yearSel.value = String(custCalYear);
+
+      document.getElementById('custCalDow').innerHTML = DOW.map(d => `<div class="cal-dow">${d}</div>`).join('');
+      const bounds = custDataBounds();
+      const first = new Date(custCalYear, custCalMonthNum - 1, 1);
+      const startOffset = (first.getDay() + 6) % 7;
+      const daysInMonth = new Date(custCalYear, custCalMonthNum, 0).getDate();
+      let html = '';
+      for (let i = 0; i < startOffset; i++) html += '<div class="cal-cell cal-empty"></div>';
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${custCalYear}-${String(custCalMonthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const inData = bounds && dateStr >= bounds.min && dateStr <= bounds.max;
+        let cls = 'cal-cell ' + (inData ? 'cust-day' : 'no-data');
+        if (custRangeStart && custRangeEnd && dateStr >= custRangeStart && dateStr <= custRangeEnd) cls += ' in-range';
+        if (dateStr === custRangeStart || dateStr === custRangeEnd) cls += ' selected';
+        html += `<div class="${cls}" data-date="${dateStr}"><div class="cal-day-num">${day}</div></div>`;
+      }
+      document.getElementById('custCalGrid').innerHTML = html;
+      document.querySelectorAll('#custCalGrid .cal-cell.cust-day').forEach(cell => {
+        cell.addEventListener('click', () => {
+          const d = cell.dataset.date;
+          if (!custPickStart) { custPickStart = d; custRangeStart = d; custRangeEnd = d; custRenderCalendar(); }
+          else { custSetRange(custPickStart, d); custPickStart = null; }
+        });
+      });
+    }
+
+    function custSetRange(start, end) {
+      if (start > end) { const t = start; start = end; end = t; }
+      custRangeStart = start; custRangeEnd = end;
+      document.getElementById('custRangeStart').value = start;
+      document.getElementById('custRangeEnd').value = end;
+      document.querySelectorAll('.cust-preset-btn').forEach(b => b.classList.remove('active'));
+      renderCustPage();
+    }
+
+    function renderCustPage() {
+      const bounds = custDataBounds();
+      if (!bounds) {
+        document.getElementById('custRangeBadge').textContent = 'No data';
+        document.getElementById('custTotalsRow').innerHTML = '<div class="empty-note">No customer data available for this branch yet.</div>';
+        document.getElementById('custBreakdownRow').innerHTML = '';
+        return;
+      }
+      if (!custRangeStart || !custRangeEnd) {
+        custRangeEnd = bounds.max;
+        custRangeStart = custShiftDate(bounds.max, -29);
+        if (custRangeStart < bounds.min) custRangeStart = bounds.min;
+        document.getElementById('custRangeStart').value = custRangeStart;
+        document.getElementById('custRangeEnd').value = custRangeEnd;
+      }
+      document.getElementById('custRangeBadge').textContent = `${fmtDateMed(custRangeStart)} - ${fmtDateMed(custRangeEnd)}`;
+
+      const agg = custAggRange(custRangeStart, custRangeEnd);
+      let prevAgg = null;
+      if (custCompareMode === 'prevPeriod') {
+        const [ps, pe] = custPrevPeriodRange(custRangeStart, custRangeEnd);
+        prevAgg = custAggRange(ps, pe);
+      } else if (custCompareMode === 'prevMonth') {
+        const [ps, pe] = custPrevMonthRange(custRangeStart, custRangeEnd);
+        prevAgg = custAggRange(ps, pe);
+      }
+      renderCustCards(agg, prevAgg);
+
+      const dailyRows = custBranchDaily().filter(d => d.date >= custRangeStart && d.date <= custRangeEnd);
+      renderCustCharts(agg, dailyRows);
+      custRenderCalendar();
+    }
+
+    function refreshCustActiveView() {
+      const bounds = custDataBounds();
+      if (!custCalYear) {
+        const anchor = bounds ? bounds.max : new Date().toISOString().slice(0, 10);
+        const d = new Date(anchor + 'T00:00:00');
+        custCalYear = d.getFullYear(); custCalMonthNum = d.getMonth() + 1;
+      }
+      renderCustPage();
+    }
+
+    document.querySelectorAll('.cust-preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.cust-preset-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const bounds = custDataBounds();
+        if (!bounds) return;
+        if (btn.dataset.cdays === 'all') { custRangeStart = bounds.min; custRangeEnd = bounds.max; }
+        else {
+          const n = parseInt(btn.dataset.cdays, 10);
+          custRangeEnd = bounds.max;
+          custRangeStart = custShiftDate(bounds.max, -(n - 1));
+          if (custRangeStart < bounds.min) custRangeStart = bounds.min;
+        }
+        custPickStart = null;
+        const d = new Date(custRangeEnd + 'T00:00:00');
+        custCalYear = d.getFullYear(); custCalMonthNum = d.getMonth() + 1;
+        document.getElementById('custRangeStart').value = custRangeStart;
+        document.getElementById('custRangeEnd').value = custRangeEnd;
+        renderCustPage();
+      });
+    });
+    function custApplyManualRange() {
+      const s = document.getElementById('custRangeStart').value;
+      const e = document.getElementById('custRangeEnd').value;
+      if (!s || !e) return;
+      custPickStart = null;
+      custSetRange(s, e);
+    }
+    document.getElementById('custRangeStart').addEventListener('change', custApplyManualRange);
+    document.getElementById('custRangeEnd').addEventListener('change', custApplyManualRange);
+    document.getElementById('custCalPrev').addEventListener('click', () => {
+      custCalMonthNum--; if (custCalMonthNum < 1) { custCalMonthNum = 12; custCalYear--; }
+      custRenderCalendar();
+    });
+    document.getElementById('custCalNext').addEventListener('click', () => {
+      custCalMonthNum++; if (custCalMonthNum > 12) { custCalMonthNum = 1; custCalYear++; }
+      custRenderCalendar();
+    });
+    document.getElementById('custMonthSelect').addEventListener('change', () => { custCalMonthNum = parseInt(document.getElementById('custMonthSelect').value, 10); custRenderCalendar(); });
+    document.getElementById('custYearSelect').addEventListener('change', () => { custCalYear = parseInt(document.getElementById('custYearSelect').value, 10); custRenderCalendar(); });
+
+    document.getElementById('custCompareToggle').addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-cmp]');
+      if (!btn) return;
+      document.querySelectorAll('#custCompareToggle button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      custCompareMode = btn.dataset.cmp;
+      renderCustPage();
+    });
+
+    document.getElementById('custItemGenerateBtn').addEventListener('click', () => {
+      if (!custRangeStart || !custRangeEnd) return;
+      const ctype = document.getElementById('custItemCtype').value;
+      const section = document.getElementById('custItemSection').value;
+      const topN = parseInt(document.getElementById('custItemTopN').value, 10);
+      const search = document.getElementById('custItemSearch').value.trim().toLowerCase();
+      const items = custBranchItems();
+      const agg = {};
+      items.forEach(row => {
+        const [date, sec, ct, item, revenue, qty, count] = row;
+        if (date < custRangeStart || date > custRangeEnd) return;
+        if (ctype !== 'all' && ct !== ctype) return;
+        if (section !== 'all' && sec !== section) return;
+        if (search && item.toLowerCase().indexOf(search) === -1) return;
+        const key = item + '||' + sec;
+        if (!agg[key]) agg[key] = { item, section: sec, revenue: 0, qty: 0, count: 0 };
+        agg[key].revenue += revenue; agg[key].qty += qty; agg[key].count += count;
+      });
+      const all = Object.values(agg);
+      const grandForPct = all.reduce((s, v) => s + v.revenue, 0);
+      const list = all.sort((a, b) => b.revenue - a.revenue).slice(0, topN);
+      document.getElementById('custItemPlaceholder').style.display = 'none';
+      const out = document.getElementById('custItemOutput');
+      out.classList.add('visible');
+      if (!list.length) {
+        out.innerHTML = '<div class="empty-note">No items matched this filter in the selected range.</div>';
+        return;
+      }
+      const rows = list.map((v, i) => `<tr><td>${i + 1}</td><td>${v.item}</td><td>${v.section}</td><td class="right">${Math.round(v.count)}</td><td class="right">${fmtTHB(v.qty)}</td><td class="right">THB ${fmtTHB(v.revenue)}</td><td class="right">${grandForPct ? (v.revenue / grandForPct * 100).toFixed(1) : '0.0'}%</td></tr>`).join('');
+      out.innerHTML = `<table class="data-table"><thead><tr><th>#</th><th>Item</th><th>Section</th><th class="right">Line Count</th><th class="right">Qty</th><th class="right">Revenue (THB)</th><th class="right">% of filtered</th></tr></thead><tbody>${rows}</tbody></table>`;
+    });
 
     renderMonth(DEFAULT_YEAR, DEFAULT_MONTH);
     </script>
