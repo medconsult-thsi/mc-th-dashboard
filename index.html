@@ -83,6 +83,14 @@
     .day-mini-table { font-size: 12px; width: 100%; }
     .day-mini-table td { padding: 3px 4px; }
     .report-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .cust-pay-toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: #5a6b85; font-weight: 600; cursor: pointer; user-select: none; margin-left: auto; }
+    .cust-pay-toggle-switch { position: relative; display: inline-block; width: 38px; height: 22px; flex-shrink: 0; }
+    .cust-pay-toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .cust-pay-toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #c7d0dd; transition: .2s; border-radius: 22px; }
+    .cust-pay-toggle-slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background: #fff; transition: .2s; border-radius: 50%; }
+    .cust-pay-toggle-switch input:checked + .cust-pay-toggle-slider { background: #1a7a7a; }
+    .cust-pay-toggle-switch input:checked + .cust-pay-toggle-slider:before { transform: translateX(16px); }
+    #pageCustomers.cust-hide-pay .kpi-source-list { display: none; }
     .preset-btn { background: #edf2f9; color: #1e3a5f; border: none; border-radius: 20px; padding: 7px 16px;
       font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
     .preset-btn:hover { background: #dde7f5; }
@@ -542,6 +550,13 @@
           <input type="date" class="date-input" id="custRangeStart">
           <span style="font-size:12px;color:#8a9bb0;">to</span>
           <input type="date" class="date-input" id="custRangeEnd">
+          <label class="cust-pay-toggle">
+            <span>Payment Breakdown</span>
+            <span class="cust-pay-toggle-switch">
+              <input type="checkbox" id="custPayToggle" checked>
+              <span class="cust-pay-toggle-slider"></span>
+            </span>
+          </label>
         </div>
       </div>
 
@@ -2394,6 +2409,9 @@
     }
     document.getElementById('custRangeStart').addEventListener('change', custApplyManualRange);
     document.getElementById('custRangeEnd').addEventListener('change', custApplyManualRange);
+    document.getElementById('custPayToggle').addEventListener('change', (e) => {
+      document.getElementById('pageCustomers').classList.toggle('cust-hide-pay', !e.target.checked);
+    });
 
     document.getElementById('custCompareToggle').addEventListener('click', (e) => {
       const btn = e.target.closest('button[data-cmp]');
